@@ -21,7 +21,7 @@ use uuid::Uuid;
 
 use crate::DatabaseError;
 
-/// Fetches an iPXE OS definition by id.
+/// Fetches an iPXE OS definition by ID.
 ///
 /// Returns the definition for use with the template-based iPXE renderer.
 /// The backing store for this data is expected to be added in a future migration;
