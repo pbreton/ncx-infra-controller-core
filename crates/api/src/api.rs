@@ -2967,23 +2967,24 @@ impl Forge for Api {
             .await
     }
 
-    async fn get_ipxe_template(
+    async fn get_ipxe_script_template(
         &self,
-        request: tonic::Request<::rpc::forge::GetIpxeTemplateRequest>,
-    ) -> Result<tonic::Response<::rpc::forge::IpxeTemplate>, Status> {
+        request: tonic::Request<::rpc::forge::GetIpxeScriptTemplateRequest>,
+    ) -> Result<tonic::Response<::rpc::forge::IpxeScriptTemplate>, Status> {
         use carbide_ipxe_renderer::IpxeOsRenderer;
 
         let req = request.into_inner();
         let renderer = carbide_ipxe_renderer::DefaultIpxeOsRenderer::new();
 
         match renderer.get_template(&req.name) {
-            Some(template) => Ok(tonic::Response::new(::rpc::forge::IpxeTemplate {
+            Some(template) => Ok(tonic::Response::new(::rpc::forge::IpxeScriptTemplate {
                 name: template.name.clone(),
                 template: template.template.clone(),
                 required_params: template.required_params.clone(),
                 description: template.description.clone(),
                 reserved_params: template.reserved_params.clone(),
                 required_artifacts: template.required_artifacts.clone(),
+                scope: ipxe_script_template_scope_to_proto(template.scope).into(),
             })),
             None => Err(Status::not_found(format!(
                 "iPXE template '{}' not found",
@@ -2992,10 +2993,10 @@ impl Forge for Api {
         }
     }
 
-    async fn list_ipxe_templates(
+    async fn list_ipxe_script_templates(
         &self,
-        _request: tonic::Request<::rpc::forge::ListIpxeTemplatesRequest>,
-    ) -> Result<tonic::Response<::rpc::forge::ListIpxeTemplatesResponse>, Status> {
+        _request: tonic::Request<::rpc::forge::ListIpxeScriptTemplatesRequest>,
+    ) -> Result<tonic::Response<::rpc::forge::ListIpxeScriptTemplatesResponse>, Status> {
         use carbide_ipxe_renderer::IpxeOsRenderer;
 
         let renderer = carbide_ipxe_renderer::DefaultIpxeOsRenderer::new();
@@ -3006,20 +3007,32 @@ impl Forge for Api {
             .filter_map(|name| {
                 renderer
                     .get_template(name)
-                    .map(|t| ::rpc::forge::IpxeTemplate {
+                    .map(|t| ::rpc::forge::IpxeScriptTemplate {
                         name: t.name.clone(),
                         template: t.template.clone(),
                         required_params: t.required_params.clone(),
                         description: t.description.clone(),
                         reserved_params: t.reserved_params.clone(),
                         required_artifacts: t.required_artifacts.clone(),
+                        scope: ipxe_script_template_scope_to_proto(t.scope).into(),
                     })
             })
             .collect();
 
         Ok(tonic::Response::new(
-            ::rpc::forge::ListIpxeTemplatesResponse { templates },
+            ::rpc::forge::ListIpxeScriptTemplatesResponse { templates },
         ))
+    }
+}
+
+fn ipxe_script_template_scope_to_proto(
+    scope: carbide_ipxe_renderer::IpxeScriptTemplateScope,
+) -> ::rpc::forge::IpxeScriptTemplateScope {
+    use carbide_ipxe_renderer::IpxeScriptTemplateScope as RendererScope;
+    use ::rpc::forge::IpxeScriptTemplateScope as ProtoScope;
+    match scope {
+        RendererScope::Internal => ProtoScope::Internal,
+        RendererScope::Public => ProtoScope::Public,
     }
 }
 

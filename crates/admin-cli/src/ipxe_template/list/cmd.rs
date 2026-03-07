@@ -28,7 +28,7 @@ pub async fn list(
 ) -> Result<(), CarbideCliError> {
     let result = api_client
         .0
-        .list_ipxe_templates()
+        .list_ipxe_script_templates()
         .await?;
 
     if format == OutputFormat::Json {
@@ -40,6 +40,7 @@ pub async fn list(
         table.set_titles(Row::new(vec![
             Cell::new("Name"),
             Cell::new("Description"),
+            Cell::new("Scope"),
             Cell::new("Required Params"),
             Cell::new("Required Artifacts"),
         ]));
@@ -48,6 +49,7 @@ pub async fn list(
             table.add_row(Row::new(vec![
                 Cell::new(&tmpl.name),
                 Cell::new(&tmpl.description),
+                Cell::new(scope_display(tmpl.scope)),
                 Cell::new(&tmpl.required_params.join(", ")),
                 Cell::new(&tmpl.required_artifacts.join(", ")),
             ]));
@@ -57,4 +59,12 @@ pub async fn list(
     }
 
     Ok(())
+}
+
+fn scope_display(scope: i32) -> &'static str {
+    match rpc::forge::IpxeScriptTemplateScope::try_from(scope) {
+        Ok(rpc::forge::IpxeScriptTemplateScope::Internal) => "internal",
+        Ok(rpc::forge::IpxeScriptTemplateScope::Public) => "public",
+        _ => "unknown",
+    }
 }

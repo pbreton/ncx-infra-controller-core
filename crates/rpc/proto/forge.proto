@@ -495,9 +495,9 @@ service Forge {
   rpc GetOsImage(common.UUID) returns (OsImage);
   rpc UpdateOsImage(OsImageAttributes) returns (OsImage);
 
-  // iPXE Template management
-  rpc GetIpxeTemplate(GetIpxeTemplateRequest) returns (IpxeTemplate);
-  rpc ListIpxeTemplates(ListIpxeTemplatesRequest) returns (ListIpxeTemplatesResponse);
+  // iPXE Script Template management
+  rpc GetIpxeScriptTemplate(GetIpxeScriptTemplateRequest) returns (IpxeScriptTemplate);
+  rpc ListIpxeScriptTemplates(ListIpxeScriptTemplatesRequest) returns (ListIpxeScriptTemplatesResponse);
 
   rpc RebootCompleted(MachineRebootCompletedRequest) returns (MachineRebootCompletedResponse);
 
@@ -2176,14 +2176,21 @@ message IpxeOsDefinition {
   common.UUID created_by = 19;
 }
 
+// Scope for iPXE script templates.
+enum IpxeScriptTemplateScope {
+  INTERNAL = 0;  // Carbide-core usage only
+  PUBLIC = 1;    // Usable by tenant
+}
+
 // Template management messages
-message IpxeTemplate {
+message IpxeScriptTemplate {
   string name = 1;
   string template = 2;
   repeated string required_params = 3;  // Error if these params are not provided or empty
   string description = 4;
   repeated string reserved_params = 5;  // Reserved for carbide-core to provide at render time
   repeated string required_artifacts = 6;  // Error if these artifacts are not provided or empty
+  IpxeScriptTemplateScope scope = 7;  // INTERNAL = carbide-core only, PUBLIC = tenant-usable
 }
 
 // Tenant related configuration that is set once the instance is allocated
@@ -4727,17 +4734,17 @@ message DeleteOsImageRequest {
 message DeleteOsImageResponse {
 }
 
-// Request/Response messages for iPXE Template management
-message GetIpxeTemplateRequest {
+// Request/Response messages for iPXE Script Template management
+message GetIpxeScriptTemplateRequest {
   string name = 1;  // Template name
 }
 
-message ListIpxeTemplatesRequest {
+message ListIpxeScriptTemplatesRequest {
   // Empty for now
 }
 
-message ListIpxeTemplatesResponse {
-  repeated IpxeTemplate templates = 1;
+message ListIpxeScriptTemplatesResponse {
+  repeated IpxeScriptTemplate templates = 1;
 }
 
 

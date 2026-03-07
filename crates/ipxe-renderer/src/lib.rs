@@ -67,6 +67,17 @@ pub struct IpxeOsArtifact {
     pub local_url: Option<String>,
 }
 
+/// Scope for iPXE script templates.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum IpxeScriptTemplateScope {
+    /// Carbide-core usage only.
+    #[default]
+    Internal,
+    /// Usable by tenant.
+    Public,
+}
+
 /// iPXE script template definition
 #[derive(Debug, Clone, Deserialize)]
 pub struct IpxeScriptTemplate {
@@ -79,6 +90,8 @@ pub struct IpxeScriptTemplate {
     pub required_params: Vec<String>,
     #[serde(default)]
     pub required_artifacts: Vec<String>,
+    #[serde(default)]
+    pub scope: IpxeScriptTemplateScope,
 }
 
 /// Template collection loaded from YAML

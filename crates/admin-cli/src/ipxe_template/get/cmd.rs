@@ -27,7 +27,7 @@ pub async fn get(
 ) -> Result<(), CarbideCliError> {
     let result = match api_client
         .0
-        .get_ipxe_template(rpc::forge::GetIpxeTemplateRequest {
+        .get_ipxe_script_template(rpc::forge::GetIpxeScriptTemplateRequest {
             name: opts.name.clone(),
         })
         .await
@@ -47,6 +47,7 @@ pub async fn get(
     } else {
         println!("Name:        {}", result.name);
         println!("Description: {}", result.description);
+        println!("Scope:       {}", scope_display(result.scope));
 
         if !result.required_params.is_empty() {
             println!("Required params:    {}", result.required_params.join(", "));
@@ -65,4 +66,12 @@ pub async fn get(
     }
 
     Ok(())
+}
+
+fn scope_display(scope: i32) -> &'static str {
+    match rpc::forge::IpxeScriptTemplateScope::try_from(scope) {
+        Ok(rpc::forge::IpxeScriptTemplateScope::Internal) => "internal",
+        Ok(rpc::forge::IpxeScriptTemplateScope::Public) => "public",
+        _ => "unknown",
+    }
 }
