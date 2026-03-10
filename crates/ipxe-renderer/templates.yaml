@@ -4,6 +4,7 @@
 templates:
   - name: raw-ipxe
     description: Allows for raw iPXE scripting but provides base_url, console and arch variables
+    scope: public
     required_params:
       - ipxe
     reserved_params:
@@ -31,6 +32,7 @@ templates:
 
   - name: qcow-image
     description: Generic multi-platform template iPXE script for qcow images
+    scope: public
     required_params:
       - image_url
     reserved_params:
@@ -59,6 +61,7 @@ templates:
 
   - name: kernel-only
     description: Boot kernel/EFI without initrd (ESXi, etc.)
+    scope: public
     required_params:
       - kernel_params
     required_artifacts:
@@ -76,6 +79,7 @@ templates:
 
   - name: kernel-initrd
     description: Generic kernel + initrd boot (Ubuntu autoinstall, NKE, BCM scout, etc.)
+    scope: public
     required_params:
       - kernel_params
     required_artifacts:
@@ -95,6 +99,7 @@ templates:
 
   - name: ubuntu-autoinstall
     description: Template for Ubuntu autoinstall
+    scope: public
     required_params:
       - install_iso
     required_artifacts:
@@ -114,8 +119,9 @@ templates:
       initrd {{initrd}}
       boot
 
-  - name: DGX OS
+  - name: dgx-os
     description: Template for DGX OS autoinstall
+    scope: public
     required_params:
       - install_iso
       - force_ai
@@ -253,6 +259,7 @@ templates:
 
   - name: openshift-coreos
     description: OpenShift/Assisted Installer - CoreOS live boot with initrd before kernel
+    scope: public
     required_artifacts:
       - initrd
       - kernel
@@ -269,6 +276,7 @@ templates:
 
   - name: chain-efi
     description: Chain to arbitrary EFI binary (firmware update, custom loader, etc.)
+    scope: public
     required_params:
       - efi_url
     reserved_params:
@@ -284,6 +292,7 @@ templates:
 
   - name: loader-rootfs
     description: Chain loader.efi with newrootfs (custom root filesystem)
+    scope: public
     required_params:
       - loader_url
       - newrootfs_url
@@ -306,6 +315,7 @@ templates:
 
   - name: carbide-menu-static-ipxe
     description: Carbide Menu
+    scope: public
     template: |
       #!ipxe
       

@@ -978,7 +978,7 @@ mod tests {
 
         assert!(templates.contains(&"qcow-image".to_string()));
         assert!(templates.contains(&"ubuntu-autoinstall".to_string()));
-        assert!(templates.contains(&"DGX OS".to_string()));
+        assert!(templates.contains(&"dgx-os".to_string()));
         assert!(templates.contains(&"discovery-scout-aarch64-dpu".to_string()));
         assert!(templates.contains(&"discovery-scout-aarch64".to_string()));
         assert!(templates.contains(&"discovery-scout-x86_64".to_string()));
