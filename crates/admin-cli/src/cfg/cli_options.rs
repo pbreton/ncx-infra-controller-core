@@ -23,7 +23,7 @@ use crate::{
     dpu_remediation, expected_machines, expected_power_shelf, expected_switch, extension_service,
     firmware, generate_shell_complete, host, ib_partition, instance, instance_type, inventory, ip,
     jump, ipxe_template, machine, machine_interfaces, machine_validation, managed_host, mlx, network_devices,
-    network_security_group, network_segment, nvl_logical_partition, nvl_partition, os_image, ping,
+    network_security_group, network_segment, nvl_logical_partition, nvl_partition, operating_system, os_image, ping,
     power_shelf, rack, rack_firmware, redfish, resource_pool, rms, route_server, scout_stream, set,
     site_explorer, sku, ssh, switch, tenant, tenant_keyset, tpm_ca, trim_table, version, vpc,
     vpc_peering, vpc_prefix,
@@ -247,6 +247,9 @@ pub enum CliCommand {
 
     #[clap(about = "OS catalog management", visible_alias = "os", subcommand)]
     OsImage(os_image::Cmd),
+
+    #[clap(about = "Operating system definition management", visible_alias = "osd", subcommand)]
+    OperatingSystem(operating_system::Cmd),
 
     #[clap(about = "Manage TPM CA certificates", subcommand)]
     TpmCa(tpm_ca::Cmd),

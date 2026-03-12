@@ -52,7 +52,7 @@ pub async fn get(
     txn: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
     id: Uuid,
 ) -> Result<OperatingSystemRow, DatabaseError> {
-    let query = "SELECT id, name, description, org, type, status, is_active, allow_override,
+    let query = "SELECT id, name, description, org, type::text AS type, status, is_active, allow_override,
         phone_home_enabled, user_data, created, updated, deleted,
         ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
         FROM operating_systems WHERE id = $1 AND deleted IS NULL";
@@ -71,7 +71,7 @@ pub async fn get_many(
     if ids.is_empty() {
         return Ok(Vec::new());
     }
-    let query = "SELECT id, name, description, org, type, status, is_active, allow_override,
+    let query = "SELECT id, name, description, org, type::text AS type, status, is_active, allow_override,
         phone_home_enabled, user_data, created, updated, deleted,
         ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
         FROM operating_systems WHERE id = ANY($1) AND deleted IS NULL";
@@ -87,7 +87,7 @@ pub async fn list(
     org: Option<&str>,
 ) -> Result<Vec<OperatingSystemRow>, DatabaseError> {
     if let Some(org) = org {
-        let query = "SELECT id, name, description, org, type, status, is_active, allow_override,
+        let query = "SELECT id, name, description, org, type::text AS type, status, is_active, allow_override,
             phone_home_enabled, user_data, created, updated, deleted,
             ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
             FROM operating_systems WHERE org = $1 AND deleted IS NULL ORDER BY name";
@@ -97,7 +97,7 @@ pub async fn list(
             .await
             .map_err(|e| DatabaseError::query(query, e))
     } else {
-        let query = "SELECT id, name, description, org, type, status, is_active, allow_override,
+        let query = "SELECT id, name, description, org, type::text AS type, status, is_active, allow_override,
             phone_home_enabled, user_data, created, updated, deleted,
             ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
             FROM operating_systems WHERE deleted IS NULL ORDER BY name";
@@ -134,7 +134,7 @@ pub async fn create(
         (name, description, org, type, is_active, allow_override, phone_home_enabled, user_data,
          ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
         VALUES ($1, $2, $3, $4::operating_system_type, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        RETURNING id, name, description, org, type, status, is_active, allow_override,
+        RETURNING id, name, description, org, type::text AS type, status, is_active, allow_override,
         phone_home_enabled, user_data, created, updated, deleted,
         ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
     sqlx::query_as::<_, OperatingSystemRow>(query)
@@ -214,7 +214,7 @@ pub async fn update(
         ipxe_template_name = $8, ipxe_parameters = $9, ipxe_artifacts = $10,
         updated = NOW()
         WHERE id = $11 AND deleted IS NULL
-        RETURNING id, name, description, org, type, status, is_active, allow_override,
+        RETURNING id, name, description, org, type::text AS type, status, is_active, allow_override,
         phone_home_enabled, user_data, created, updated, deleted,
         ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
     sqlx::query_as::<_, OperatingSystemRow>(query)
