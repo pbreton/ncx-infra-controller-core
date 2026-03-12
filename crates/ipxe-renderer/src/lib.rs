@@ -17,7 +17,6 @@ use std::collections::HashMap;
 /// iPXE OS definition with template-based rendering support
 #[derive(Debug, Clone)]
 pub struct IpxeOs {
-    //pub id: String, // Not needed yet since we don't store in DB
     pub name: String,
     pub description: Option<String>,
     pub hash: String,
@@ -26,9 +25,6 @@ pub struct IpxeOs {
     pub ipxe_template_name: String,
     pub parameters: Vec<IpxeOsParameter>,
     pub artifacts: Vec<IpxeOsArtifact>,
-    //pub created: String, // Not needed yet since we don't store in DB
-    //pub updated: String, // Not needed yet since we don't store in DB
-    //pub created_by: String, // Not needed yet since we don't store in DB
 }
 
 /// OS scope enum
