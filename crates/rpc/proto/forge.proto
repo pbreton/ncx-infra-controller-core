@@ -6940,6 +6940,7 @@ message CreateOperatingSystemRequest {
   bool allow_override = 5;
   bool phone_home_enabled = 6;
   optional string user_data = 7;
+  optional common.UUID id = 8;
 
   // Exactly one variant group must be provided to determine the type.
   // ipxe: set ipxe_script

@@ -28,6 +28,9 @@ pub struct Args {
     #[clap(short, long, help = "Organization identifier for this OS definition.")]
     pub org: String,
 
+    #[clap(long, help = "Optional UUID for the new OS definition (default: server-generated).")]
+    pub id: Option<String>,
+
     #[clap(short, long, help = "Optional human-readable description.")]
     pub description: Option<String>,
 

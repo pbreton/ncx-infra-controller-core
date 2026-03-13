@@ -110,6 +110,7 @@ pub async fn list(
 
 #[derive(Debug)]
 pub struct CreateOperatingSystem {
+    pub id: Option<Uuid>,
     pub name: String,
     pub description: Option<String>,
     pub org: String,
@@ -130,31 +131,61 @@ pub async fn create(
     txn: &mut PgConnection,
     input: &CreateOperatingSystem,
 ) -> Result<OperatingSystemRow, DatabaseError> {
-    let query = "INSERT INTO operating_systems
-        (name, description, org, type, is_active, allow_override, phone_home_enabled, user_data,
-         ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
-        VALUES ($1, $2, $3, $4::operating_system_type, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        RETURNING id, name, description, org, type::text AS type, status, is_active, allow_override,
-        phone_home_enabled, user_data, created, updated, deleted,
-        ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
-    sqlx::query_as::<_, OperatingSystemRow>(query)
-        .bind(&input.name)
-        .bind(&input.description)
-        .bind(&input.org)
-        .bind(&input.type_)
-        .bind(input.is_active)
-        .bind(input.allow_override)
-        .bind(input.phone_home_enabled)
-        .bind(&input.user_data)
-        .bind(&input.ipxe_script)
-        .bind(input.os_image_id)
-        .bind(&input.ipxe_template_name)
-        .bind(input.ipxe_parameters.as_ref().map(sqlx::types::Json))
-        .bind(input.ipxe_artifacts.as_ref().map(sqlx::types::Json))
-        .bind(&input.ipxe_definition_hash)
-        .fetch_one(txn)
-        .await
-        .map_err(|e| DatabaseError::query(query, e))
+    let row = if let Some(id) = input.id {
+        let query = "INSERT INTO operating_systems
+            (id, name, description, org, type, is_active, allow_override, phone_home_enabled, user_data,
+             ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
+            VALUES ($1, $2, $3, $4, $5::operating_system_type, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            RETURNING id, name, description, org, type::text AS type, status, is_active, allow_override,
+            phone_home_enabled, user_data, created, updated, deleted,
+            ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
+        sqlx::query_as::<_, OperatingSystemRow>(query)
+            .bind(id)
+            .bind(&input.name)
+            .bind(&input.description)
+            .bind(&input.org)
+            .bind(&input.type_)
+            .bind(input.is_active)
+            .bind(input.allow_override)
+            .bind(input.phone_home_enabled)
+            .bind(&input.user_data)
+            .bind(&input.ipxe_script)
+            .bind(input.os_image_id)
+            .bind(&input.ipxe_template_name)
+            .bind(input.ipxe_parameters.as_ref().map(sqlx::types::Json))
+            .bind(input.ipxe_artifacts.as_ref().map(sqlx::types::Json))
+            .bind(&input.ipxe_definition_hash)
+            .fetch_one(txn)
+            .await
+            .map_err(|e| DatabaseError::query(query, e))?
+    } else {
+        let query = "INSERT INTO operating_systems
+            (name, description, org, type, is_active, allow_override, phone_home_enabled, user_data,
+             ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
+            VALUES ($1, $2, $3, $4::operating_system_type, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            RETURNING id, name, description, org, type::text AS type, status, is_active, allow_override,
+            phone_home_enabled, user_data, created, updated, deleted,
+            ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
+        sqlx::query_as::<_, OperatingSystemRow>(query)
+            .bind(&input.name)
+            .bind(&input.description)
+            .bind(&input.org)
+            .bind(&input.type_)
+            .bind(input.is_active)
+            .bind(input.allow_override)
+            .bind(input.phone_home_enabled)
+            .bind(&input.user_data)
+            .bind(&input.ipxe_script)
+            .bind(input.os_image_id)
+            .bind(&input.ipxe_template_name)
+            .bind(input.ipxe_parameters.as_ref().map(sqlx::types::Json))
+            .bind(input.ipxe_artifacts.as_ref().map(sqlx::types::Json))
+            .bind(&input.ipxe_definition_hash)
+            .fetch_one(txn)
+            .await
+            .map_err(|e| DatabaseError::query(query, e))?
+    };
+    Ok(row)
 }
 
 #[derive(Debug)]

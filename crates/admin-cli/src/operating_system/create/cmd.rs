@@ -29,6 +29,12 @@ pub async fn create(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> 
         .map(str_to_rpc_uuid)
         .transpose()?;
 
+    let id = opts
+        .id
+        .as_deref()
+        .map(str_to_rpc_uuid)
+        .transpose()?;
+
     let os = api_client
         .0
         .create_operating_system(CreateOperatingSystemRequest {
@@ -39,6 +45,7 @@ pub async fn create(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> 
             allow_override: opts.allow_override,
             phone_home_enabled: opts.phone_home_enabled,
             user_data: opts.user_data,
+            id,
             ipxe_script: opts.ipxe_script,
             ipxe_template_name: opts.ipxe_template_name,
             os_image_id,

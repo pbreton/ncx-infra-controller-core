@@ -187,7 +187,15 @@ pub async fn create_operating_system(
         return Err(Status::invalid_argument("org is required"));
     }
 
+    let id = req
+        .id
+        .as_ref()
+        .map(|u| Uuid::try_from(u.clone()))
+        .transpose()
+        .map_err(|e| Status::invalid_argument(format!("invalid id: {e}")))?;
+
     let input = db::operating_system::CreateOperatingSystem {
+        id,
         name: req.name,
         description: req.description,
         org: req.org,
