@@ -18,8 +18,7 @@
 pub mod common;
 mod create;
 mod delete;
-mod get;
-mod list;
+mod show;
 mod update;
 
 use clap::Parser;
@@ -29,10 +28,8 @@ use crate::cfg::dispatch::Dispatch;
 #[derive(Parser, Debug, Clone, Dispatch)]
 #[clap(rename_all = "kebab_case")]
 pub enum Cmd {
-    #[clap(about = "List operating system definitions.", visible_alias = "ls")]
-    List(list::Args),
-    #[clap(about = "Get a single operating system definition by ID.", visible_alias = "g")]
-    Get(get::Args),
+    #[clap(about = "Show operating system definitions (all, or one by ID).", visible_alias = "s")]
+    Show(show::Args),
     #[clap(about = "Create a new operating system definition.", visible_alias = "c")]
     Create(create::Args),
     #[clap(about = "Update an existing operating system definition.", visible_alias = "u")]

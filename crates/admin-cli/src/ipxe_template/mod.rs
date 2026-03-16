@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-mod get;
-mod list;
+mod show;
 
 use clap::Parser;
 
@@ -25,8 +24,6 @@ use crate::cfg::dispatch::Dispatch;
 #[derive(Parser, Debug, Clone, Dispatch)]
 #[clap(rename_all = "kebab_case")]
 pub enum Cmd {
-    #[clap(about = "Get a single iPXE template by name.", visible_alias = "g")]
-    Get(get::Args),
-    #[clap(about = "List all available iPXE templates.", visible_alias = "ls")]
-    List(list::Args),
+    #[clap(about = "Show iPXE templates (all, or one by name).", visible_alias = "s")]
+    Show(show::Args),
 }

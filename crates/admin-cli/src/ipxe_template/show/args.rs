@@ -15,17 +15,10 @@
  * limitations under the License.
  */
 
-pub mod args;
-pub mod cmd;
+use clap::Parser;
 
-use ::rpc::admin_cli::CarbideCliResult;
-pub use args::Args;
-
-use crate::cfg::run::Run;
-use crate::cfg::runtime::RuntimeContext;
-
-impl Run for Args {
-    async fn run(self, ctx: &mut RuntimeContext) -> CarbideCliResult<()> {
-        cmd::get(self, ctx.config.format, &ctx.api_client).await
-    }
+#[derive(Parser, Debug, Clone)]
+pub struct Args {
+    #[clap(help = "Template name; omit to list all.")]
+    pub name: Option<String>,
 }

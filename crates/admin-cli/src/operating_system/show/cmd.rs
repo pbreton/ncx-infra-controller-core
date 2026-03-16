@@ -16,24 +16,90 @@
  */
 
 use ::rpc::admin_cli::{CarbideCliError, CarbideCliResult, OutputFormat};
+use ::rpc::forge::ListOperatingSystemsRequest;
+use prettytable::{Cell, Row, Table};
 
 use super::args::Args;
 use crate::operating_system::common::{str_to_rpc_uuid, SerializableOs};
 use crate::rpc::ApiClient;
 
-pub async fn get(
+pub async fn handle_show(
     opts: Args,
     format: OutputFormat,
     api_client: &ApiClient,
 ) -> CarbideCliResult<()> {
-    let id = str_to_rpc_uuid(&opts.id)?;
+    if opts.id.as_deref().unwrap_or("").is_empty() {
+        list_all(opts, format, api_client).await
+    } else {
+        show_one(opts.id.as_deref().unwrap(), format, api_client).await
+    }
+}
+
+async fn list_all(
+    opts: Args,
+    format: OutputFormat,
+    api_client: &ApiClient,
+) -> CarbideCliResult<()> {
+    let result = api_client
+        .0
+        .list_operating_systems(ListOperatingSystemsRequest { org: opts.org })
+        .await?;
+
+    let operating_systems = result.operating_systems;
+
+    if format == OutputFormat::Json {
+        let serializable: Vec<SerializableOs> =
+            operating_systems.into_iter().map(SerializableOs::from).collect();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serializable).map_err(CarbideCliError::JsonError)?
+        );
+        return Ok(());
+    }
+
+    if operating_systems.is_empty() {
+        println!("No operating system definitions found.");
+        return Ok(());
+    }
+
+    let mut table = Table::new();
+    table.set_titles(Row::new(vec![
+        Cell::new("ID"),
+        Cell::new("Name"),
+        Cell::new("Org"),
+        Cell::new("Type"),
+        Cell::new("Status"),
+        Cell::new("Active"),
+    ]));
+
+    for os in &operating_systems {
+        table.add_row(Row::new(vec![
+            Cell::new(&os.id),
+            Cell::new(&os.name),
+            Cell::new(&os.org),
+            Cell::new(&os.r#type),
+            Cell::new(&os.status),
+            Cell::new(if os.is_active { "yes" } else { "no" }),
+        ]));
+    }
+
+    table.printstd();
+    Ok(())
+}
+
+async fn show_one(
+    id_str: &str,
+    format: OutputFormat,
+    api_client: &ApiClient,
+) -> CarbideCliResult<()> {
+    let id = str_to_rpc_uuid(id_str)?;
 
     let os = match api_client.0.get_operating_system(id).await {
         Ok(os) => os,
         Err(status) if status.code() == tonic::Code::NotFound => {
             return Err(CarbideCliError::GenericError(format!(
                 "Operating system not found: {}",
-                opts.id
+                id_str
             )));
         }
         Err(err) => return Err(CarbideCliError::from(err)),

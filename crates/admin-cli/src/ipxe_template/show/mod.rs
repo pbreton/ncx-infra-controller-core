@@ -15,10 +15,17 @@
  * limitations under the License.
  */
 
-use clap::Parser;
+pub mod args;
+pub mod cmd;
 
-#[derive(Parser, Debug, Clone)]
-pub struct Args {
-    #[clap(help = "UUID of the operating system definition to retrieve.")]
-    pub id: String,
+use ::rpc::admin_cli::CarbideCliResult;
+pub use args::Args;
+
+use crate::cfg::run::Run;
+use crate::cfg::runtime::RuntimeContext;
+
+impl Run for Args {
+    async fn run(self, ctx: &mut RuntimeContext) -> CarbideCliResult<()> {
+        cmd::handle_show(self, ctx.config.format, &ctx.api_client).await
+    }
 }
