@@ -216,18 +216,20 @@ fn build_operating_system_for_snapshot(
                 ipxe_script: script,
             })
         }
-        "image" => OperatingSystemVariant::OsImage(
-            os_row
-                .os_image_id
-                .expect("operating_systems row with type=image must have os_image_id"),
-        ),
         "ipxe_os_definition" => OperatingSystemVariant::IpxeOsDefinition(os_row.id),
-        _ => OperatingSystemVariant::Ipxe(InlineIpxe {
-            ipxe_script: os_row
-                .ipxe_script
-                .clone()
-                .unwrap_or_else(|| pg_json.os_ipxe_script.clone()),
-        }),
+        _ => {
+            tracing::warn!(
+                os_id = %os_row.id,
+                os_type = %os_row.type_,
+                "unexpected operating_system type, falling back to inline iPXE"
+            );
+            OperatingSystemVariant::Ipxe(InlineIpxe {
+                ipxe_script: os_row
+                    .ipxe_script
+                    .clone()
+                    .unwrap_or_else(|| pg_json.os_ipxe_script.clone()),
+            })
+        }
     };
     OperatingSystem {
         variant,

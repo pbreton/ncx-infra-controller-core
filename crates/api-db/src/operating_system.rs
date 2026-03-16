@@ -77,9 +77,6 @@ fn ipxe_artifacts_from_json(
 
 impl From<&OperatingSystem> for model::operating_system_definition::OperatingSystemDefinition {
     fn from(row: &OperatingSystem) -> Self {
-        let os_image_id = row.os_image_id.as_ref().map(|id| ::rpc::common::Uuid {
-            value: id.to_string(),
-        });
         Self {
             id: row.id.to_string(),
             name: row.name.clone(),
@@ -94,7 +91,6 @@ impl From<&OperatingSystem> for model::operating_system_definition::OperatingSys
             created: row.created.to_rfc3339(),
             updated: row.updated.to_rfc3339(),
             ipxe_script: row.ipxe_script.clone(),
-            os_image_id,
             ipxe_template_name: row.ipxe_template_name.clone(),
             ipxe_parameters: ipxe_parameters_from_json(row.ipxe_parameters.as_ref()),
             ipxe_artifacts: ipxe_artifacts_from_json(row.ipxe_artifacts.as_ref()),
@@ -103,7 +99,8 @@ impl From<&OperatingSystem> for model::operating_system_definition::OperatingSys
     }
 }
 
-/// Row from the operating_systems table. Supports all variants: ipxe, image, ipxe_os_definition.
+/// Row from the operating_systems table. Supports iPXE variants: ipxe, ipxe_os_definition.
+/// The os_image_id column is retained for legacy/instance use but is not set by this CRUD.
 #[derive(Debug, Clone, FromRow, Deserialize)]
 pub struct OperatingSystem {
     pub id: Uuid,
@@ -197,7 +194,6 @@ pub struct CreateOperatingSystem {
     pub phone_home_enabled: bool,
     pub user_data: Option<String>,
     pub ipxe_script: Option<String>,
-    pub os_image_id: Option<Uuid>,
     pub ipxe_template_name: Option<String>,
     pub ipxe_parameters: Option<serde_json::Value>,
     pub ipxe_artifacts: Option<serde_json::Value>,
@@ -211,8 +207,8 @@ pub async fn create(
     let row = if let Some(id) = input.id {
         let query = "INSERT INTO operating_systems
             (id, name, description, org, type, is_active, allow_override, phone_home_enabled, user_data,
-             ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
-            VALUES ($1, $2, $3, $4, $5::operating_system_type, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+             ipxe_script, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
+            VALUES ($1, $2, $3, $4, $5::operating_system_type, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             RETURNING id, name, description, org, type::text AS type, status, is_active, allow_override,
             phone_home_enabled, user_data, created, updated, deleted,
             ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
@@ -227,7 +223,6 @@ pub async fn create(
             .bind(input.phone_home_enabled)
             .bind(&input.user_data)
             .bind(&input.ipxe_script)
-            .bind(input.os_image_id)
             .bind(&input.ipxe_template_name)
             .bind(input.ipxe_parameters.as_ref().map(sqlx::types::Json))
             .bind(input.ipxe_artifacts.as_ref().map(sqlx::types::Json))
@@ -238,8 +233,8 @@ pub async fn create(
     } else {
         let query = "INSERT INTO operating_systems
             (name, description, org, type, is_active, allow_override, phone_home_enabled, user_data,
-             ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
-            VALUES ($1, $2, $3, $4::operating_system_type, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+             ipxe_script, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
+            VALUES ($1, $2, $3, $4::operating_system_type, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             RETURNING id, name, description, org, type::text AS type, status, is_active, allow_override,
             phone_home_enabled, user_data, created, updated, deleted,
             ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
@@ -253,7 +248,6 @@ pub async fn create(
             .bind(input.phone_home_enabled)
             .bind(&input.user_data)
             .bind(&input.ipxe_script)
-            .bind(input.os_image_id)
             .bind(&input.ipxe_template_name)
             .bind(input.ipxe_parameters.as_ref().map(sqlx::types::Json))
             .bind(input.ipxe_artifacts.as_ref().map(sqlx::types::Json))

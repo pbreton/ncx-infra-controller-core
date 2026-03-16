@@ -150,9 +150,6 @@ async fn show_one(
     if let Some(tmpl) = &os.ipxe_template_name {
         println!("iPXE Template:       {tmpl}");
     }
-    if let Some(img_id) = &os.os_image_id {
-        println!("OS Image ID:         {img_id}");
-    }
 
     if !os.ipxe_parameters.is_empty() {
         println!("\niPXE Parameters:");

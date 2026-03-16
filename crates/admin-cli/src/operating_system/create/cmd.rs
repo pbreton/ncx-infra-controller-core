@@ -22,13 +22,8 @@ use super::args::Args;
 use crate::operating_system::common::str_to_rpc_uuid;
 use crate::rpc::ApiClient;
 
-pub async fn create(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> {
-    let os_image_id = opts
-        .os_image_id
-        .as_deref()
-        .map(str_to_rpc_uuid)
-        .transpose()?;
 
+pub async fn create(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> {
     let id = opts
         .id
         .as_deref()
@@ -48,7 +43,6 @@ pub async fn create(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> 
             id,
             ipxe_script: opts.ipxe_script,
             ipxe_template_name: opts.ipxe_template_name,
-            os_image_id,
             ipxe_parameters: opts.params,
             ipxe_artifacts: vec![],
         })

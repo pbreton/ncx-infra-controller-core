@@ -22,7 +22,6 @@
 //! The model type name matches the RPC message name (OperatingSystemDefinition).
 
 use ::rpc::forge::{self as forgerpc};
-use ::rpc::common;
 
 /// Operating system definition (list/get/create/update response).
 ///
@@ -43,7 +42,6 @@ pub struct OperatingSystemDefinition {
     pub created: String,
     pub updated: String,
     pub ipxe_script: Option<String>,
-    pub os_image_id: Option<common::Uuid>,
     pub ipxe_template_name: Option<String>,
     pub ipxe_parameters: Vec<forgerpc::IpxeOsParameter>,
     pub ipxe_artifacts: Vec<forgerpc::IpxeOsArtifact>,
@@ -66,7 +64,6 @@ impl From<OperatingSystemDefinition> for forgerpc::OperatingSystemDefinition {
             created: m.created,
             updated: m.updated,
             ipxe_script: m.ipxe_script,
-            os_image_id: m.os_image_id,
             ipxe_template_name: m.ipxe_template_name,
             ipxe_parameters: m.ipxe_parameters,
             ipxe_artifacts: m.ipxe_artifacts,

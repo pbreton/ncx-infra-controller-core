@@ -61,20 +61,9 @@ pub async fn create_operating_system(
     let mut txn = api.txn_begin().await?;
     let req = request.into_inner();
 
-    let (type_, ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts) =
+    let (type_, ipxe_script, ipxe_template_name, ipxe_parameters, ipxe_artifacts) =
         if let Some(ref script) = req.ipxe_script {
-            (
-                "ipxe".to_string(),
-                Some(script.clone()),
-                None,
-                None,
-                None,
-                None,
-            )
-        } else if let Some(ref img_id) = req.os_image_id {
-            let id = Uuid::try_from(img_id.clone())
-                .map_err(|e| Status::invalid_argument(format!("invalid os_image_id: {e}")))?;
-            ("image".to_string(), None, Some(id), None, None, None)
+            ("ipxe".to_string(), Some(script.clone()), None, None, None)
         } else if let Some(ref tmpl) = req.ipxe_template_name {
             let params = if req.ipxe_parameters.is_empty() {
                 None
@@ -89,14 +78,13 @@ pub async fn create_operating_system(
             (
                 "ipxe_os_definition".to_string(),
                 None,
-                None,
                 Some(tmpl.clone()),
                 params,
                 arts,
             )
         } else {
             return Err(Status::invalid_argument(
-                "exactly one OS variant must be specified: ipxe_script, os_image_id, or ipxe_template_name",
+                "exactly one OS variant must be specified: ipxe_script or ipxe_template_name",
             ));
         };
 
@@ -125,7 +113,6 @@ pub async fn create_operating_system(
         phone_home_enabled: req.phone_home_enabled,
         user_data: req.user_data,
         ipxe_script,
-        os_image_id,
         ipxe_template_name,
         ipxe_parameters,
         ipxe_artifacts,

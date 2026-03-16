@@ -48,24 +48,17 @@ pub struct Args {
 
     #[clap(
         long,
-        conflicts_with_all = ["ipxe_template_name", "os_image_id"],
-        help = "Raw iPXE boot script (mutually exclusive with --ipxe-template-name and --os-image-id)."
+        conflicts_with_all = ["ipxe_template_name"],
+        help = "Raw iPXE boot script (mutually exclusive with --ipxe-template-name)."
     )]
     pub ipxe_script: Option<String>,
 
     #[clap(
         long,
-        conflicts_with_all = ["ipxe_script", "os_image_id"],
-        help = "Name of the iPXE template to use (mutually exclusive with --ipxe-script and --os-image-id)."
+        conflicts_with_all = ["ipxe_script"],
+        help = "Name of the iPXE template to use (mutually exclusive with --ipxe-script)."
     )]
     pub ipxe_template_name: Option<String>,
-
-    #[clap(
-        long,
-        conflicts_with_all = ["ipxe_script", "ipxe_template_name"],
-        help = "UUID of an OS image to boot (mutually exclusive with --ipxe-script and --ipxe-template-name)."
-    )]
-    pub os_image_id: Option<String>,
 
     #[clap(
         long = "param",

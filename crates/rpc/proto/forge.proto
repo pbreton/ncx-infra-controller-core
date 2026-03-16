@@ -6924,8 +6924,6 @@ message OperatingSystemDefinition {
 
   // Variant: ipxe
   optional string ipxe_script = 20;
-  // Variant: image
-  optional common.UUID os_image_id = 21;
   // Variant: ipxe_os_definition
   optional string ipxe_template_name = 22;
   repeated IpxeOsParameter ipxe_parameters = 23;
@@ -6943,12 +6941,10 @@ message CreateOperatingSystemRequest {
   optional string user_data = 7;
   optional common.UUID id = 8;
 
-  // Exactly one variant group must be provided to determine the type.
+  // Exactly one variant must be provided to determine the type.
   // ipxe: set ipxe_script
-  // image: set os_image_id
   // ipxe_os_definition: set ipxe_template_name (and optionally parameters/artifacts)
   optional string ipxe_script = 20;
-  optional common.UUID os_image_id = 21;
   optional string ipxe_template_name = 22;
   repeated IpxeOsParameter ipxe_parameters = 23;
   repeated IpxeOsArtifact ipxe_artifacts = 24;
