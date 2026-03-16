@@ -146,6 +146,14 @@ pub async fn find(
         .fetch_all(&mut *txn)
         .await
         .map_err(|e| DatabaseError::query(query.sql(), e))?;
+    resolve_snapshots_from_json_rows(&mut *txn, rows).await
+}
+
+/// Converts raw JSON rows to InstanceSnapshots, batch-loading OS definitions as needed.
+async fn resolve_snapshots_from_json_rows(
+    txn: &mut PgConnection,
+    rows: Vec<(serde_json::Value,)>,
+) -> Result<Vec<InstanceSnapshot>, DatabaseError> {
     let mut pg_jsons: Vec<InstanceSnapshotPgJson> = Vec::with_capacity(rows.len());
     for (json,) in rows {
         let pg_json: InstanceSnapshotPgJson =
@@ -305,46 +313,7 @@ pub async fn find_by_machine_ids(
         .fetch_all(&mut *txn)
         .await
         .map_err(|e| DatabaseError::query(query, e))?;
-    let mut pg_jsons: Vec<InstanceSnapshotPgJson> = Vec::with_capacity(rows.len());
-    for (json,) in rows {
-        let pg_json: InstanceSnapshotPgJson =
-            serde_json::from_value(json).map_err(|e| DatabaseError::Internal {
-                message: format!("instance snapshot json decode: {e}"),
-            })?;
-        pg_jsons.push(pg_json);
-    }
-    if pg_jsons.is_empty() {
-        return Ok(Vec::new());
-    }
-    let os_ids: Vec<uuid::Uuid> = pg_jsons
-        .iter()
-        .filter_map(|p| p.operating_system_id)
-        .collect();
-    let os_by_id: std::collections::HashMap<uuid::Uuid, OsRow> = if os_ids.is_empty() {
-        std::collections::HashMap::new()
-    } else {
-        operating_system::get_many(&mut *txn, &os_ids)
-            .await?
-            .into_iter()
-            .map(|r| (r.id, r))
-            .collect()
-    };
-    let mut snapshots = Vec::with_capacity(pg_jsons.len());
-    for pg_json in pg_jsons {
-        let snapshot = match pg_json.operating_system_id.and_then(|id| os_by_id.get(&id)) {
-            Some(os_row) => {
-                let os = build_operating_system_for_snapshot(os_row, &pg_json);
-                snapshot::from_pg_json_and_os(pg_json, os).map_err(|e| DatabaseError::Internal {
-                    message: format!("instance snapshot from_pg_json_and_os: {e}"),
-                })?
-            }
-            None => InstanceSnapshot::try_from(pg_json).map_err(|e| DatabaseError::Internal {
-                message: format!("instance snapshot try_from: {e}"),
-            })?,
-        };
-        snapshots.push(snapshot);
-    }
-    Ok(snapshots)
+    resolve_snapshots_from_json_rows(&mut *txn, rows).await
 }
 
 pub async fn find_by_extension_service(
@@ -368,11 +337,12 @@ pub async fn find_by_extension_service(
     }
     builder.push(")");
 
-    builder
+    let rows: Vec<(serde_json::Value,)> = builder
         .build_query_as()
-        .fetch_all(txn)
+        .fetch_all(&mut *txn)
         .await
-        .map_err(|e| DatabaseError::query(builder.sql(), e))
+        .map_err(|e| DatabaseError::query(builder.sql(), e))?;
+    resolve_snapshots_from_json_rows(txn, rows).await
 }
 
 /// Returns true if any non-deleted instance has this logical partition ID in
@@ -862,13 +832,14 @@ pub async fn batch_persist<'a>(
         ));
     }
 
-    // Now fetch the inserted instances
+    // Fetch the inserted instances, resolving OS definitions as needed.
     let query = "SELECT row_to_json(i.*) FROM instances i WHERE i.id = ANY($1)";
-    sqlx::query_as(query)
+    let rows: Vec<(serde_json::Value,)> = sqlx::query_as(query)
         .bind(&instance_ids)
-        .fetch_all(txn)
+        .fetch_all(&mut *txn)
         .await
-        .map_err(|e| DatabaseError::query(query, e))
+        .map_err(|e| DatabaseError::query(query, e))?;
+    resolve_snapshots_from_json_rows(txn, rows).await
 }
 
 /// Batch update network configs for multiple instances

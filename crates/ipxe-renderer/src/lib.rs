@@ -462,17 +462,25 @@ impl IpxeOsRenderer for DefaultIpxeOsRenderer {
         // Hash template name (lowercase for case-insensitivity)
         hasher.update(ipxeos.ipxe_template_name.to_lowercase().as_bytes());
 
-        // Hash parameters (sorted for determinism, names lowercase for case-insensitivity)
         let mut params = ipxeos.parameters.clone();
-        params.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        params.sort_by(|a, b| {
+            a.name
+                .to_lowercase()
+                .cmp(&b.name.to_lowercase())
+                .then(a.value.cmp(&b.value))
+        });
         for param in params {
             hasher.update(param.name.to_lowercase().as_bytes()); // Lowercase for case-insensitivity
             hasher.update(param.value.as_bytes()); // Value keeps original case
         }
 
-        // Hash artifacts (excluding cache_strategy and local_url, names lowercase)
         let mut artifacts = ipxeos.artifacts.clone();
-        artifacts.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        artifacts.sort_by(|a, b| {
+            a.name
+                .to_lowercase()
+                .cmp(&b.name.to_lowercase())
+                .then(a.url.cmp(&b.url))
+        });
         for artifact in artifacts {
             hasher.update(artifact.name.to_lowercase().as_bytes()); // Lowercase for case-insensitivity
             hasher.update(artifact.url.as_bytes());
