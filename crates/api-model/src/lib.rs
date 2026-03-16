@@ -69,6 +69,7 @@ pub mod network_security_group;
 pub mod network_segment;
 pub mod network_segment_state_history;
 pub mod os;
+pub mod operating_system_definition;
 pub mod power_manager;
 pub mod power_shelf;
 pub mod predicted_machine_interface;

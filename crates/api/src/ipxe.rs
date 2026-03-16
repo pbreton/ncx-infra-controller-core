@@ -31,7 +31,7 @@ use crate::CarbideError;
 
 /// Converts an operating_systems row (type ipxe_os_definition) to IpxeOs for the renderer.
 fn operating_system_row_to_ipxe_os(
-    row: &db::operating_system::OperatingSystemRow,
+    row: &db::operating_system::OperatingSystem,
 ) -> Result<IpxeOs, CarbideError> {
     if row.type_ != "ipxe_os_definition" {
         return Err(CarbideError::internal(format!(

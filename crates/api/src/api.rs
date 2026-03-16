@@ -1966,21 +1966,21 @@ impl Forge for Api {
     async fn create_operating_system(
         &self,
         request: Request<rpc::CreateOperatingSystemRequest>,
-    ) -> Result<Response<rpc::StoredOperatingSystem>, Status> {
+    ) -> Result<Response<rpc::OperatingSystemDefinition>, Status> {
         crate::handlers::operating_system::create_operating_system(self, request).await
     }
 
     async fn get_operating_system(
         &self,
         request: Request<::rpc::Uuid>,
-    ) -> Result<Response<rpc::StoredOperatingSystem>, Status> {
+    ) -> Result<Response<rpc::OperatingSystemDefinition>, Status> {
         crate::handlers::operating_system::get_operating_system(self, request).await
     }
 
     async fn update_operating_system(
         &self,
         request: Request<rpc::UpdateOperatingSystemRequest>,
-    ) -> Result<Response<rpc::StoredOperatingSystem>, Status> {
+    ) -> Result<Response<rpc::OperatingSystemDefinition>, Status> {
         crate::handlers::operating_system::update_operating_system(self, request).await
     }
 
@@ -1991,11 +1991,18 @@ impl Forge for Api {
         crate::handlers::operating_system::delete_operating_system(self, request).await
     }
 
-    async fn list_operating_systems(
+    async fn find_operating_system_ids(
         &self,
-        request: Request<rpc::ListOperatingSystemsRequest>,
-    ) -> Result<Response<rpc::ListOperatingSystemsResponse>, Status> {
-        crate::handlers::operating_system::list_operating_systems(self, request).await
+        request: Request<rpc::OperatingSystemSearchFilter>,
+    ) -> Result<Response<rpc::OperatingSystemIdList>, Status> {
+        crate::handlers::operating_system::find_operating_system_ids(self, request).await
+    }
+
+    async fn find_operating_systems_by_ids(
+        &self,
+        request: Request<rpc::OperatingSystemsByIdsRequest>,
+    ) -> Result<Response<rpc::OperatingSystemList>, Status> {
+        crate::handlers::operating_system::find_operating_systems_by_ids(self, request).await
     }
 
     async fn get_machine_validation_runs(

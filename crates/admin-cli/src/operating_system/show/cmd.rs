@@ -16,7 +16,7 @@
  */
 
 use ::rpc::admin_cli::{CarbideCliError, CarbideCliResult, OutputFormat};
-use ::rpc::forge::ListOperatingSystemsRequest;
+use ::rpc::forge::OperatingSystemSearchFilter;
 use prettytable::{Cell, Row, Table};
 
 use super::args::Args;
@@ -40,12 +40,24 @@ async fn list_all(
     format: OutputFormat,
     api_client: &ApiClient,
 ) -> CarbideCliResult<()> {
-    let result = api_client
+    let id_list = api_client
         .0
-        .list_operating_systems(ListOperatingSystemsRequest { org: opts.org })
+        .find_operating_system_ids(OperatingSystemSearchFilter {
+            org: opts.org,
+        })
         .await?;
 
-    let operating_systems = result.operating_systems;
+    let operating_systems = if id_list.ids.is_empty() {
+        vec![]
+    } else {
+        api_client
+            .0
+            .find_operating_systems_by_ids(::rpc::forge::OperatingSystemsByIdsRequest {
+                ids: id_list.ids,
+            })
+            .await?
+            .operating_systems
+    };
 
     if format == OutputFormat::Json {
         let serializable: Vec<SerializableOs> =

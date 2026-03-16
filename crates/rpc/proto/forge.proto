@@ -814,11 +814,12 @@ service Forge {
   rpc GetDPFState(GetDPFStateRequest) returns (DPFStateResponse);
 
   // Operating System library
-  rpc CreateOperatingSystem(CreateOperatingSystemRequest) returns (StoredOperatingSystem);
-  rpc GetOperatingSystem(common.UUID) returns (StoredOperatingSystem);
-  rpc UpdateOperatingSystem(UpdateOperatingSystemRequest) returns (StoredOperatingSystem);
+  rpc CreateOperatingSystem(CreateOperatingSystemRequest) returns (OperatingSystemDefinition);
+  rpc GetOperatingSystem(common.UUID) returns (OperatingSystemDefinition);
+  rpc UpdateOperatingSystem(UpdateOperatingSystemRequest) returns (OperatingSystemDefinition);
   rpc DeleteOperatingSystem(DeleteOperatingSystemRequest) returns (DeleteOperatingSystemResponse);
-  rpc ListOperatingSystems(ListOperatingSystemsRequest) returns (ListOperatingSystemsResponse);
+  rpc FindOperatingSystemIds(OperatingSystemSearchFilter) returns (OperatingSystemIdList);
+  rpc FindOperatingSystemsByIds(OperatingSystemsByIdsRequest) returns (OperatingSystemList);
 }
 
 message AttestationIdsRequest {
@@ -6906,8 +6907,8 @@ message GetDPFStateRequest {
 
 // --- Operating System library messages ---
 
-// Represents a stored operating system definition
-message StoredOperatingSystem {
+// Operating system definition (CRUD resource, table operating_systems).
+message OperatingSystemDefinition {
   string id = 1;
   string name = 2;
   optional string description = 3;
@@ -6974,10 +6975,18 @@ message DeleteOperatingSystemRequest {
 
 message DeleteOperatingSystemResponse {}
 
-message ListOperatingSystemsRequest {
+message OperatingSystemSearchFilter {
   optional string org = 1;
 }
 
-message ListOperatingSystemsResponse {
-  repeated StoredOperatingSystem operating_systems = 1;
+message OperatingSystemIdList {
+  repeated common.UUID ids = 1;
+}
+
+message OperatingSystemsByIdsRequest {
+  repeated common.UUID ids = 1;
+}
+
+message OperatingSystemList {
+  repeated OperatingSystemDefinition operating_systems = 1;
 }

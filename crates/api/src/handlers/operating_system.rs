@@ -21,86 +21,6 @@ use uuid::Uuid;
 use crate::api::Api;
 use crate::api::rpc;
 
-fn row_to_proto(
-    row: &db::operating_system::OperatingSystemRow,
-) -> Result<rpc::StoredOperatingSystem, Status> {
-    let os_image_id = row.os_image_id.map(|id| ::rpc::common::Uuid {
-        value: id.to_string(),
-    });
-
-    let ipxe_parameters = row
-        .ipxe_parameters
-        .as_ref()
-        .and_then(|j| j.0.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|v| {
-                    let obj = v.as_object()?;
-                    Some(rpc::IpxeOsParameter {
-                        name: obj.get("name")?.as_str()?.to_string(),
-                        value: obj.get("value")?.as_str().unwrap_or("").to_string(),
-                    })
-                })
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-
-    let ipxe_artifacts = row
-        .ipxe_artifacts
-        .as_ref()
-        .and_then(|j| j.0.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|v| {
-                    let obj = v.as_object()?;
-                    Some(rpc::IpxeOsArtifact {
-                        name: obj.get("name")?.as_str()?.to_string(),
-                        url: obj.get("url")?.as_str().unwrap_or("").to_string(),
-                        sha: obj.get("sha").and_then(|v| v.as_str()).map(String::from),
-                        auth_type: obj
-                            .get("auth_type")
-                            .and_then(|v| v.as_str())
-                            .map(String::from),
-                        auth_token: obj
-                            .get("auth_token")
-                            .and_then(|v| v.as_str())
-                            .map(String::from),
-                        cache_strategy: obj
-                            .get("cache_strategy")
-                            .and_then(|v| v.as_i64())
-                            .unwrap_or(0) as i32,
-                        local_url: obj
-                            .get("local_url")
-                            .and_then(|v| v.as_str())
-                            .map(String::from),
-                    })
-                })
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-
-    Ok(rpc::StoredOperatingSystem {
-        id: row.id.to_string(),
-        name: row.name.clone(),
-        description: row.description.clone(),
-        org: row.org.clone(),
-        r#type: row.type_.clone(),
-        status: row.status.clone(),
-        is_active: row.is_active,
-        allow_override: row.allow_override,
-        phone_home_enabled: row.phone_home_enabled,
-        user_data: row.user_data.clone(),
-        created: row.created.to_rfc3339(),
-        updated: row.updated.to_rfc3339(),
-        ipxe_script: row.ipxe_script.clone(),
-        os_image_id,
-        ipxe_template_name: row.ipxe_template_name.clone(),
-        ipxe_parameters,
-        ipxe_artifacts,
-        ipxe_definition_hash: row.ipxe_definition_hash.clone(),
-    })
-}
-
 fn parameters_to_json(params: &[rpc::IpxeOsParameter]) -> serde_json::Value {
     serde_json::Value::Array(
         params
@@ -137,7 +57,7 @@ fn artifacts_to_json(artifacts: &[rpc::IpxeOsArtifact]) -> serde_json::Value {
 pub async fn create_operating_system(
     api: &Api,
     request: Request<rpc::CreateOperatingSystemRequest>,
-) -> Result<Response<rpc::StoredOperatingSystem>, Status> {
+) -> Result<Response<rpc::OperatingSystemDefinition>, Status> {
     let mut txn = api.txn_begin().await?;
     let req = request.into_inner();
 
@@ -219,13 +139,15 @@ pub async fn create_operating_system(
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
 
-    Ok(Response::new(row_to_proto(&row)?))
+    let def: rpc::OperatingSystemDefinition =
+        model::operating_system_definition::OperatingSystemDefinition::from(&row).into();
+    Ok(Response::new(def))
 }
 
 pub async fn get_operating_system(
     api: &Api,
     request: Request<::rpc::Uuid>,
-) -> Result<Response<rpc::StoredOperatingSystem>, Status> {
+) -> Result<Response<rpc::OperatingSystemDefinition>, Status> {
     let mut txn = api.txn_begin().await?;
     let id = Uuid::try_from(request.into_inner())
         .map_err(|e| Status::invalid_argument(e.to_string()))?;
@@ -241,13 +163,15 @@ pub async fn get_operating_system(
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
 
-    Ok(Response::new(row_to_proto(&row)?))
+    let def: rpc::OperatingSystemDefinition =
+        model::operating_system_definition::OperatingSystemDefinition::from(&row).into();
+    Ok(Response::new(def))
 }
 
 pub async fn update_operating_system(
     api: &Api,
     request: Request<rpc::UpdateOperatingSystemRequest>,
-) -> Result<Response<rpc::StoredOperatingSystem>, Status> {
+) -> Result<Response<rpc::OperatingSystemDefinition>, Status> {
     let mut txn = api.txn_begin().await?;
     let req = request.into_inner();
 
@@ -297,7 +221,9 @@ pub async fn update_operating_system(
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
 
-    Ok(Response::new(row_to_proto(&row)?))
+    let def: rpc::OperatingSystemDefinition =
+        model::operating_system_definition::OperatingSystemDefinition::from(&row).into();
+    Ok(Response::new(def))
 }
 
 pub async fn delete_operating_system(
@@ -329,26 +255,56 @@ pub async fn delete_operating_system(
     Ok(Response::new(rpc::DeleteOperatingSystemResponse {}))
 }
 
-pub async fn list_operating_systems(
+pub async fn find_operating_system_ids(
     api: &Api,
-    request: Request<rpc::ListOperatingSystemsRequest>,
-) -> Result<Response<rpc::ListOperatingSystemsResponse>, Status> {
+    request: Request<rpc::OperatingSystemSearchFilter>,
+) -> Result<Response<rpc::OperatingSystemIdList>, Status> {
     let mut txn = api.txn_begin().await?;
-    let req = request.into_inner();
+    let filter = request.into_inner();
 
-    let rows = db::operating_system::list(&mut txn, req.org.as_deref())
+    let ids = db::operating_system::list_ids(&mut txn, filter.org.as_deref())
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
     txn.commit()
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
 
-    let operating_systems = rows
-        .iter()
-        .map(row_to_proto)
-        .collect::<Result<Vec<_>, _>>()?;
+    let ids = ids
+        .into_iter()
+        .map(|u| ::rpc::common::Uuid {
+            value: u.to_string(),
+        })
+        .collect();
 
-    Ok(Response::new(rpc::ListOperatingSystemsResponse {
+    Ok(Response::new(rpc::OperatingSystemIdList { ids }))
+}
+
+pub async fn find_operating_systems_by_ids(
+    api: &Api,
+    request: Request<rpc::OperatingSystemsByIdsRequest>,
+) -> Result<Response<rpc::OperatingSystemList>, Status> {
+    let mut txn = api.txn_begin().await?;
+    let req = request.into_inner();
+
+    let ids: Vec<Uuid> = req
+        .ids
+        .iter()
+        .filter_map(|u| Uuid::parse_str(&u.value).ok())
+        .collect();
+
+    let rows = db::operating_system::get_many(&mut txn, &ids)
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?;
+    txn.commit()
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?;
+
+    let operating_systems: Vec<rpc::OperatingSystemDefinition> = rows
+        .iter()
+        .map(|row| model::operating_system_definition::OperatingSystemDefinition::from(row).into())
+        .collect();
+
+    Ok(Response::new(rpc::OperatingSystemList {
         operating_systems,
     }))
 }

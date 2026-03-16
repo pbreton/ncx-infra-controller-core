@@ -16,7 +16,7 @@
  */
 
 use ::rpc::admin_cli::{CarbideCliError, CarbideCliResult};
-use ::rpc::forge::{IpxeOsArtifact, IpxeOsParameter, StoredOperatingSystem};
+use ::rpc::forge::{IpxeOsArtifact, IpxeOsParameter, OperatingSystemDefinition};
 use serde::Serialize;
 
 pub fn str_to_rpc_uuid(id: &str) -> CarbideCliResult<::rpc::common::Uuid> {
@@ -37,7 +37,7 @@ pub fn parse_param(s: &str) -> Result<IpxeOsParameter, String> {
     })
 }
 
-/// Local serializable mirror of `StoredOperatingSystem` for JSON output.
+/// Local serializable mirror of `OperatingSystemDefinition` for JSON output.
 #[derive(Serialize)]
 pub struct SerializableOs {
     pub id: String,
@@ -86,8 +86,8 @@ impl From<IpxeOsArtifact> for SerializableArtifact {
     }
 }
 
-impl From<StoredOperatingSystem> for SerializableOs {
-    fn from(os: StoredOperatingSystem) -> Self {
+impl From<OperatingSystemDefinition> for SerializableOs {
+    fn from(os: OperatingSystemDefinition) -> Self {
         Self {
             id: os.id,
             name: os.name,

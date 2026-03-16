@@ -22,9 +22,90 @@ use uuid::Uuid;
 
 use crate::DatabaseError;
 
+fn ipxe_parameters_from_json(
+    j: Option<&sqlx::types::Json<serde_json::Value>>,
+) -> Vec<::rpc::forge::IpxeOsParameter> {
+    j.and_then(|j| j.0.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| {
+                    let obj = v.as_object()?;
+                    Some(::rpc::forge::IpxeOsParameter {
+                        name: obj.get("name")?.as_str()?.to_string(),
+                        value: obj.get("value")?.as_str().unwrap_or("").to_string(),
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+fn ipxe_artifacts_from_json(
+    j: Option<&sqlx::types::Json<serde_json::Value>>,
+) -> Vec<::rpc::forge::IpxeOsArtifact> {
+    j.and_then(|j| j.0.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| {
+                    let obj = v.as_object()?;
+                    Some(::rpc::forge::IpxeOsArtifact {
+                        name: obj.get("name")?.as_str()?.to_string(),
+                        url: obj.get("url")?.as_str().unwrap_or("").to_string(),
+                        sha: obj.get("sha").and_then(|v| v.as_str()).map(String::from),
+                        auth_type: obj
+                            .get("auth_type")
+                            .and_then(|v| v.as_str())
+                            .map(String::from),
+                        auth_token: obj
+                            .get("auth_token")
+                            .and_then(|v| v.as_str())
+                            .map(String::from),
+                        cache_strategy: obj
+                            .get("cache_strategy")
+                            .and_then(|v| v.as_i64())
+                            .unwrap_or(0) as i32,
+                        local_url: obj
+                            .get("local_url")
+                            .and_then(|v| v.as_str())
+                            .map(String::from),
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+impl From<&OperatingSystem> for model::operating_system_definition::OperatingSystemDefinition {
+    fn from(row: &OperatingSystem) -> Self {
+        let os_image_id = row.os_image_id.as_ref().map(|id| ::rpc::common::Uuid {
+            value: id.to_string(),
+        });
+        Self {
+            id: row.id.to_string(),
+            name: row.name.clone(),
+            description: row.description.clone(),
+            org: row.org.clone(),
+            type_: row.type_.clone(),
+            status: row.status.clone(),
+            is_active: row.is_active,
+            allow_override: row.allow_override,
+            phone_home_enabled: row.phone_home_enabled,
+            user_data: row.user_data.clone(),
+            created: row.created.to_rfc3339(),
+            updated: row.updated.to_rfc3339(),
+            ipxe_script: row.ipxe_script.clone(),
+            os_image_id,
+            ipxe_template_name: row.ipxe_template_name.clone(),
+            ipxe_parameters: ipxe_parameters_from_json(row.ipxe_parameters.as_ref()),
+            ipxe_artifacts: ipxe_artifacts_from_json(row.ipxe_artifacts.as_ref()),
+            ipxe_definition_hash: row.ipxe_definition_hash.clone(),
+        }
+    }
+}
+
 /// Row from the operating_systems table. Supports all variants: ipxe, image, ipxe_os_definition.
 #[derive(Debug, Clone, FromRow, Deserialize)]
-pub struct OperatingSystemRow {
+pub struct OperatingSystem {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
@@ -51,12 +132,12 @@ pub struct OperatingSystemRow {
 pub async fn get(
     txn: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
     id: Uuid,
-) -> Result<OperatingSystemRow, DatabaseError> {
+) -> Result<OperatingSystem, DatabaseError> {
     let query = "SELECT id, name, description, org, type::text AS type, status, is_active, allow_override,
         phone_home_enabled, user_data, created, updated, deleted,
         ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
         FROM operating_systems WHERE id = $1 AND deleted IS NULL";
-    sqlx::query_as::<_, OperatingSystemRow>(query)
+    sqlx::query_as::<_, OperatingSystem>(query)
         .bind(id)
         .fetch_one(txn)
         .await
@@ -67,7 +148,7 @@ pub async fn get(
 pub async fn get_many(
     txn: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
     ids: &[Uuid],
-) -> Result<Vec<OperatingSystemRow>, DatabaseError> {
+) -> Result<Vec<OperatingSystem>, DatabaseError> {
     if ids.is_empty() {
         return Ok(Vec::new());
     }
@@ -75,33 +156,29 @@ pub async fn get_many(
         phone_home_enabled, user_data, created, updated, deleted,
         ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
         FROM operating_systems WHERE id = ANY($1) AND deleted IS NULL";
-    sqlx::query_as::<_, OperatingSystemRow>(query)
+    sqlx::query_as::<_, OperatingSystem>(query)
         .bind(ids)
         .fetch_all(txn)
         .await
         .map_err(|e| DatabaseError::query(query, e))
 }
 
-pub async fn list(
-    txn: &mut PgConnection,
+/// Returns only ids for operating systems matching the filter (optional org). Order by name.
+pub async fn list_ids(
+    txn: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
     org: Option<&str>,
-) -> Result<Vec<OperatingSystemRow>, DatabaseError> {
+) -> Result<Vec<Uuid>, DatabaseError> {
     if let Some(org) = org {
-        let query = "SELECT id, name, description, org, type::text AS type, status, is_active, allow_override,
-            phone_home_enabled, user_data, created, updated, deleted,
-            ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
-            FROM operating_systems WHERE org = $1 AND deleted IS NULL ORDER BY name";
-        sqlx::query_as::<_, OperatingSystemRow>(query)
+        let query =
+            "SELECT id FROM operating_systems WHERE org = $1 AND deleted IS NULL ORDER BY name";
+        sqlx::query_scalar::<_, Uuid>(query)
             .bind(org)
             .fetch_all(txn)
             .await
             .map_err(|e| DatabaseError::query(query, e))
     } else {
-        let query = "SELECT id, name, description, org, type::text AS type, status, is_active, allow_override,
-            phone_home_enabled, user_data, created, updated, deleted,
-            ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
-            FROM operating_systems WHERE deleted IS NULL ORDER BY name";
-        sqlx::query_as::<_, OperatingSystemRow>(query)
+        let query = "SELECT id FROM operating_systems WHERE deleted IS NULL ORDER BY name";
+        sqlx::query_scalar::<_, Uuid>(query)
             .fetch_all(txn)
             .await
             .map_err(|e| DatabaseError::query(query, e))
@@ -130,7 +207,7 @@ pub struct CreateOperatingSystem {
 pub async fn create(
     txn: &mut PgConnection,
     input: &CreateOperatingSystem,
-) -> Result<OperatingSystemRow, DatabaseError> {
+) -> Result<OperatingSystem, DatabaseError> {
     let row = if let Some(id) = input.id {
         let query = "INSERT INTO operating_systems
             (id, name, description, org, type, is_active, allow_override, phone_home_enabled, user_data,
@@ -139,7 +216,7 @@ pub async fn create(
             RETURNING id, name, description, org, type::text AS type, status, is_active, allow_override,
             phone_home_enabled, user_data, created, updated, deleted,
             ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
-        sqlx::query_as::<_, OperatingSystemRow>(query)
+        sqlx::query_as::<_, OperatingSystem>(query)
             .bind(id)
             .bind(&input.name)
             .bind(&input.description)
@@ -166,7 +243,7 @@ pub async fn create(
             RETURNING id, name, description, org, type::text AS type, status, is_active, allow_override,
             phone_home_enabled, user_data, created, updated, deleted,
             ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
-        sqlx::query_as::<_, OperatingSystemRow>(query)
+        sqlx::query_as::<_, OperatingSystem>(query)
             .bind(&input.name)
             .bind(&input.description)
             .bind(&input.org)
@@ -205,9 +282,9 @@ pub struct UpdateOperatingSystem {
 
 pub async fn update(
     txn: &mut PgConnection,
-    existing: &OperatingSystemRow,
+    existing: &OperatingSystem,
     input: &UpdateOperatingSystem,
-) -> Result<OperatingSystemRow, DatabaseError> {
+) -> Result<OperatingSystem, DatabaseError> {
     let name = input.name.as_deref().unwrap_or(&existing.name);
     let description = input
         .description
@@ -248,7 +325,7 @@ pub async fn update(
         RETURNING id, name, description, org, type::text AS type, status, is_active, allow_override,
         phone_home_enabled, user_data, created, updated, deleted,
         ipxe_script, os_image_id, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
-    sqlx::query_as::<_, OperatingSystemRow>(query)
+    sqlx::query_as::<_, OperatingSystem>(query)
         .bind(name)
         .bind(description)
         .bind(is_active)

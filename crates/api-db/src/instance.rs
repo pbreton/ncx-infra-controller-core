@@ -38,7 +38,7 @@ use model::os::{InlineIpxe, OperatingSystem, OperatingSystemVariant};
 use sqlx::PgConnection;
 
 use crate::db_read::DbReader;
-use crate::operating_system::{self, OperatingSystemRow};
+use crate::operating_system::{self, OperatingSystem as OsRow};
 use crate::{
     ColumnInfo, DatabaseError, DatabaseResult, FilterableQueryBuilder, ObjectColumnFilter,
     instance_address,
@@ -161,7 +161,7 @@ pub async fn find(
         .iter()
         .filter_map(|p| p.operating_system_id)
         .collect();
-    let os_by_id: std::collections::HashMap<uuid::Uuid, OperatingSystemRow> = if os_ids.is_empty() {
+    let os_by_id: std::collections::HashMap<uuid::Uuid, OsRow> = if os_ids.is_empty() {
         std::collections::HashMap::new()
     } else {
         operating_system::get_many(&mut *txn, &os_ids)
@@ -190,7 +190,7 @@ pub async fn find(
 
 /// Builds the effective OperatingSystem for an instance by merging the OS definition with instance overrides.
 fn build_operating_system_for_snapshot(
-    os_row: &OperatingSystemRow,
+    os_row: &OsRow,
     pg_json: &InstanceSnapshotPgJson,
 ) -> OperatingSystem {
     let user_data = pg_json
@@ -251,7 +251,7 @@ pub async fn find_by_id(
         })?;
     let snapshot = match os_json {
         Some(oj) => {
-            let os_row: OperatingSystemRow =
+            let os_row: OsRow =
                 serde_json::from_value(oj).map_err(|e| DatabaseError::Internal {
                     message: format!("operating_system row json decode: {e}"),
                 })?;
@@ -320,7 +320,7 @@ pub async fn find_by_machine_ids(
         .iter()
         .filter_map(|p| p.operating_system_id)
         .collect();
-    let os_by_id: std::collections::HashMap<uuid::Uuid, OperatingSystemRow> = if os_ids.is_empty() {
+    let os_by_id: std::collections::HashMap<uuid::Uuid, OsRow> = if os_ids.is_empty() {
         std::collections::HashMap::new()
     } else {
         operating_system::get_many(&mut *txn, &os_ids)
