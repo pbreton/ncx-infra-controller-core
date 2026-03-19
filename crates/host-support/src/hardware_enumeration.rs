@@ -755,8 +755,15 @@ pub fn enumerate_hardware() -> Result<rpc_discovery::DiscoveryInfo, HardwareEnum
     let device_count = enumerator.scan_devices()?.count();
 
     // If there are no GPUs present on the host we do not want to run nvidia-smi as it will fail
+    // we don't want an nvidia-smi failure to prevent agent from registering so we just warn on error.
     let gpus = if device_count > 0 {
-        gpu::get_nvidia_smi_data()?
+        match gpu::get_nvidia_smi_data() {
+            Ok(gpus) => gpus,
+            Err(e) => {
+                tracing::warn!("Could not get GPU data from nvidia-smi: {e}");
+                vec![]
+            }
+        }
     } else {
         tracing::debug!("No GPUs detected, skipping");
         vec![]
