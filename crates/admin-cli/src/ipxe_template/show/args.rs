@@ -19,6 +19,6 @@ use clap::Parser;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Args {
-    #[clap(help = "Template name; omit to list all.")]
-    pub name: Option<String>,
+    #[clap(help = "Template ID (UUID); omit to list all.")]
+    pub id: Option<String>,
 }

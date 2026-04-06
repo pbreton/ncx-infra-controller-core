@@ -25,6 +25,7 @@ pub mod extension_service;
 pub mod infiniband;
 pub mod instance;
 pub mod instance_type;
+pub mod ipxe_template;
 pub mod machine;
 pub mod measured_boot;
 pub mod network;

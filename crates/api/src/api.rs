@@ -3147,10 +3147,14 @@ impl Forge for Api {
         use carbide_ipxe_renderer::IpxeScriptRenderer;
 
         let req = request.into_inner();
+        let id = req
+            .id
+            .ok_or_else(|| Status::invalid_argument("id is required"))?;
         let renderer = carbide_ipxe_renderer::DefaultIpxeScriptRenderer::new();
 
-        match renderer.get_template(&req.name) {
+        match renderer.get_template_by_id(&id.to_string()) {
             Some(template) => Ok(tonic::Response::new(::rpc::forge::IpxeScriptTemplate {
+                id: Some(id),
                 name: template.name.clone(),
                 template: template.template.clone(),
                 required_params: template.required_params.clone(),
@@ -3161,7 +3165,7 @@ impl Forge for Api {
             })),
             None => Err(Status::not_found(format!(
                 "iPXE template '{}' not found",
-                req.name
+                id
             ))),
         }
     }
@@ -3179,8 +3183,9 @@ impl Forge for Api {
             .iter()
             .filter_map(|name| {
                 renderer
-                    .get_template(name)
+                    .get_template_by_name(name)
                     .map(|t| ::rpc::forge::IpxeScriptTemplate {
+                        id: t.id.parse().ok(),
                         name: t.name.clone(),
                         template: t.template.clone(),
                         required_params: t.required_params.clone(),

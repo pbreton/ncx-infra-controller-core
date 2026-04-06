@@ -2372,6 +2372,7 @@ message IpxeScriptTemplate {
   repeated string reserved_params = 5;  // Reserved for carbide-core to provide at render time
   repeated string required_artifacts = 6;  // Error if these artifacts are not provided or empty
   IpxeScriptTemplateScope scope = 7;  // INTERNAL = carbide-core only, PUBLIC = tenant-usable
+  common.IpxeTemplateId id = 8;  // Stable UUID, hardcoded in templates.yaml; consistent across all sites
 }
 
 // Tenant related configuration that is set once the instance is allocated
@@ -5054,7 +5055,7 @@ message DeleteOsImageResponse {
 
 // Request/Response messages for iPXE Script Template management
 message GetIpxeScriptTemplateRequest {
-  string name = 1;  // Template name
+  common.IpxeTemplateId id = 1;  // Stable template UUID
 }
 
 message ListIpxeScriptTemplatesRequest {

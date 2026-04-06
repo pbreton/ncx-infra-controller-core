@@ -2,7 +2,8 @@
 # These templates are loaded at compile time into DefaultIpxeScriptRenderer
 
 templates:
-  - name: raw-ipxe
+  - id: ddbf83c0-a753-5fde-96c1-6b74e9c9db10
+    name: raw-ipxe
     description: Allows for raw iPXE scripting but provides base_url, console and arch variables
     scope: public
     required_params:
@@ -30,7 +31,8 @@ templates:
       # 3. Insert raw iPXE:
       {{ipxe}}
 
-  - name: qcow-image
+  - id: ea756ddd-add3-5e42-a202-44bfc2d5aac2
+    name: qcow-image
     description: Generic multi-platform template iPXE script for qcow images
     scope: public
     required_params:
@@ -59,7 +61,8 @@ templates:
       chain ${base_url}/internal/${buildarch}/qcow-imager.efi loglevel=7 console=tty0 pci=realloc=off console=${console} image_url={{image_url}} {{extra}}
       boot
 
-  - name: kernel-only
+  - id: 5c7cfa88-6003-5ac0-b4c0-201eb5b28153
+    name: kernel-only
     description: Boot kernel/EFI without initrd (ESXi, etc.)
     scope: public
     required_params:
@@ -77,7 +80,8 @@ templates:
       kernel {{kernel}} {{kernel_params}} {{extra}}
       boot
 
-  - name: kernel-initrd
+  - id: c4b1d4f6-69ba-5f55-90cd-ab2acd002475
+    name: kernel-initrd
     description: Generic kernel + initrd boot (Ubuntu autoinstall, NKE, BCM scout, etc.)
     scope: public
     required_params:
@@ -97,7 +101,8 @@ templates:
       initrd {{initrd}}
       boot
 
-  - name: ubuntu-autoinstall
+  - id: a7850943-e3cd-5e9a-93ca-9e12f52939cc
+    name: ubuntu-autoinstall
     description: Template for Ubuntu autoinstall
     scope: public
     required_params:
@@ -119,7 +124,8 @@ templates:
       initrd {{initrd}}
       boot
 
-  - name: dgx-os
+  - id: ecaf197e-d60e-50f8-a598-c844afccc24d
+    name: dgx-os
     description: Template for DGX OS autoinstall
     scope: public
     required_params:
@@ -143,7 +149,8 @@ templates:
       
       boot
 
-  - name: discovery-scout-aarch64-dpu
+  - id: fd4f4413-18c4-5159-8cc0-7a64be5f98b9
+    name: discovery-scout-aarch64-dpu
     description: Discovery Scout for ARM DPU with initrd
     reserved_params:
       - base_url
@@ -159,7 +166,8 @@ templates:
       imgfetch --name initrd.img {{base_url}}/internal/aarch64/carbide.root ||
       boot ||
 
-  - name: discovery-scout-aarch64
+  - id: d88257b0-f40a-5714-a1ed-1cb8f6237b9b
+    name: discovery-scout-aarch64
     description: Discovery Scout for ARM Host
     reserved_params:
       - base_url
@@ -173,7 +181,8 @@ templates:
       kernel {{base_url}}/internal/aarch64/scout.efi mac={{mac}} console=tty0 console=ttyS0,115200 pci=realloc=off iommu=off cli_cmd={{cli_cmd}} machine_id={{machine_id}} server_uri={{server_uri}} {{extra}} ||
       boot ||
 
-  - name: discovery-scout-x86_64
+  - id: bbfbd1d9-9a19-5ce0-ba56-65d75eb225a1
+    name: discovery-scout-x86_64
     description: Discovery Scout for x86_64
     reserved_params:
       - base_url
@@ -188,7 +197,8 @@ templates:
       kernel {{base_url}}/internal/x86_64/scout.efi mac={{mac}} console=tty0 console={{serial_console}} pci=realloc=off iommu=off cli_cmd={{cli_cmd}} machine_id={{machine_id}} server_uri={{server_uri}} {{extra}} ||
       boot ||
 
-  - name: error-instructions
+  - id: cfff2862-bb55-55c6-bf66-237b5bcf09b3
+    name: error-instructions
     description: Error instructions template
     required_params:
       - machine_id
@@ -203,7 +213,8 @@ templates:
       sleep 5 ||
       exit ||
 
-  - name: exit-instructions
+  - id: f5dd027a-d3d9-5128-9709-96d2af192aef
+    name: exit-instructions
     description: Exit instructions template
     required_params:
       - machine_id
@@ -218,7 +229,8 @@ templates:
       sleep 5 ||
       exit ||
 
-  - name: unknown-host
+  - id: dd8c8306-9047-5fc0-9c78-3f520bdf7247
+    name: unknown-host
     description: Unknown host template
     required_params:
       - architecture
@@ -228,7 +240,8 @@ templates:
       sleep 5 ||
       exit ||
 
-  - name: whoami
+  - id: 9bfffafc-4ffa-53b8-b9c4-81d1b01e7257
+    name: whoami
     description: Who am I iPXE script to print machine information
     template: |
       #!ipxe
@@ -257,7 +270,8 @@ templates:
       prompt
       exit
 
-  - name: openshift-coreos
+  - id: 9f1b388e-cf6d-52a2-a20a-19eeeaca2f47
+    name: openshift-coreos
     description: OpenShift/Assisted Installer - CoreOS live boot with initrd before kernel
     scope: public
     required_artifacts:
@@ -274,7 +288,8 @@ templates:
       kernel {{kernel}} initrd=initrd {{kernel_params}} {{extra}}
       boot
 
-  - name: chain-efi
+  - id: 7be5f99b-9719-53cb-9733-7d674c02e887
+    name: chain-efi
     description: Chain to arbitrary EFI binary (firmware update, custom loader, etc.)
     scope: public
     required_params:
@@ -290,7 +305,8 @@ templates:
       chain {{efi_url}} {{extra}}
       boot
 
-  - name: loader-rootfs
+  - id: d38ae593-8f92-5869-9605-e6d8b2359e7d
+    name: loader-rootfs
     description: Chain loader.efi with newrootfs (custom root filesystem)
     scope: public
     required_params:
@@ -307,13 +323,15 @@ templates:
       chain {{loader_url}} newrootfs={{newrootfs_url}} {{extra}}
       boot
 
-  - name: ipxe-shell
+  - id: 2d2e5533-b2dc-5d7a-9754-bb85ff7dc33b
+    name: ipxe-shell
     description: Drop into iPXE shell for debugging
     template: |
       #!ipxe
       shell
 
-  - name: carbide-menu-static-ipxe
+  - id: c816a939-0993-5ebf-82dd-5227ad215703
+    name: carbide-menu-static-ipxe
     description: Carbide Menu
     scope: public
     template: |

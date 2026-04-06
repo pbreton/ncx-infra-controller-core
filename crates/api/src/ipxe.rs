@@ -204,7 +204,7 @@ impl PxeInstructions {
         }];
 
         // Check if template requires console parameter
-        if let Some(template) = renderer.get_template(&ipxeos.ipxe_template_name)
+        if let Some(template) = renderer.get_template_by_name(&ipxeos.ipxe_template_name)
             && template
                 .reserved_params
                 .iter()

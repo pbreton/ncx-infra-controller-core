@@ -400,6 +400,7 @@ async fn test_list_ipxe_script_templates(pool: sqlx::PgPool) {
         "should have at least one embedded template"
     );
     for tmpl in &resp.templates {
+        assert!(tmpl.id.is_some(), "template id must be set");
         assert!(!tmpl.name.is_empty());
         assert!(!tmpl.template.is_empty());
     }
@@ -418,20 +419,22 @@ async fn test_get_ipxe_script_template(pool: sqlx::PgPool) {
         .unwrap()
         .into_inner();
 
-    let first_name = &all.templates[0].name;
+    let first = &all.templates[0];
+    let first_id = first.id.clone().expect("template id must be set");
 
     let resp = env
         .api
         .get_ipxe_script_template(tonic::Request::new(
             rpc::forge::GetIpxeScriptTemplateRequest {
-                name: first_name.clone(),
+                id: Some(first_id.clone()),
             },
         ))
         .await
         .unwrap()
         .into_inner();
 
-    assert_eq!(&resp.name, first_name);
+    assert_eq!(&resp.name, &first.name);
+    assert_eq!(resp.id, Some(first_id));
     assert!(!resp.template.is_empty());
 }
 
@@ -1159,11 +1162,12 @@ async fn test_update_with_cached_only_artifacts_recomputes_status(pool: sqlx::Pg
 async fn test_get_ipxe_script_template_not_found(pool: sqlx::PgPool) {
     let env = create_test_env(pool).await;
 
+    let nonexistent_id = carbide_uuid::ipxe_template::IpxeTemplateId::nil();
     let resp = env
         .api
         .get_ipxe_script_template(tonic::Request::new(
             rpc::forge::GetIpxeScriptTemplateRequest {
-                name: "nonexistent-template".to_string(),
+                id: Some(nonexistent_id),
             },
         ))
         .await;

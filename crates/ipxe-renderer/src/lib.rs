@@ -69,6 +69,7 @@ pub enum IpxeScriptTemplateScope {
 /// iPXE script template definition
 #[derive(Debug, Clone, Deserialize)]
 pub struct IpxeScriptTemplate {
+    pub id: String,
     pub name: String,
     pub description: String,
     pub template: String, // iPXE script template: `#!ipxe\n...`
@@ -136,8 +137,11 @@ pub trait IpxeScriptRenderer {
         reserved_params: &[IpxeScriptParameter],
     ) -> Result<String>;
 
-    /// GetTemplate returns a template by name
-    fn get_template(&self, name: &str) -> Option<&IpxeScriptTemplate>;
+    /// GetTemplateByName returns a template by name
+    fn get_template_by_name(&self, name: &str) -> Option<&IpxeScriptTemplate>;
+
+    /// GetTemplateById returns a template by its stable UUID
+    fn get_template_by_id(&self, id: &str) -> Option<&IpxeScriptTemplate>;
 
     /// ListTemplates returns all available template names
     fn list_templates(&self) -> Vec<String>;
@@ -230,7 +234,7 @@ impl IpxeScriptRenderer for DefaultIpxeScriptRenderer {
 
         // Get template
         let template = self
-            .get_template(&ipxeos.ipxe_template_name)
+            .get_template_by_name(&ipxeos.ipxe_template_name)
             .ok_or_else(|| {
                 IpxeTemplatedScriptError::TemplateNotFound(ipxeos.ipxe_template_name.clone())
             })?;
@@ -350,8 +354,12 @@ impl IpxeScriptRenderer for DefaultIpxeScriptRenderer {
         Ok(result)
     }
 
-    fn get_template(&self, name: &str) -> Option<&IpxeScriptTemplate> {
+    fn get_template_by_name(&self, name: &str) -> Option<&IpxeScriptTemplate> {
         self.templates.get(name)
+    }
+
+    fn get_template_by_id(&self, id: &str) -> Option<&IpxeScriptTemplate> {
+        self.templates.values().find(|t| t.id == id)
     }
 
     fn list_templates(&self) -> Vec<String> {
@@ -361,7 +369,7 @@ impl IpxeScriptRenderer for DefaultIpxeScriptRenderer {
     fn validate(&self, ipxeos: &IpxeTemplatedScript) -> Result<()> {
         // Get template
         let template = self
-            .get_template(&ipxeos.ipxe_template_name)
+            .get_template_by_name(&ipxeos.ipxe_template_name)
             .ok_or_else(|| {
                 IpxeTemplatedScriptError::TemplateNotFound(ipxeos.ipxe_template_name.clone())
             })?;
@@ -1026,14 +1034,26 @@ mod tests {
     }
 
     #[test]
-    fn test_get_template() {
+    fn test_get_template_by_name() {
         let renderer = DefaultIpxeScriptRenderer::new();
 
-        let template = renderer.get_template("qcow-image");
+        let template = renderer.get_template_by_name("qcow-image");
         assert!(template.is_some());
         assert_eq!(template.unwrap().name, "qcow-image");
 
-        let missing = renderer.get_template("nonexistent");
+        let missing = renderer.get_template_by_name("nonexistent");
+        assert!(missing.is_none());
+    }
+
+    #[test]
+    fn test_get_template_by_id() {
+        let renderer = DefaultIpxeScriptRenderer::new();
+
+        let template = renderer.get_template_by_id("ea756ddd-add3-5e42-a202-44bfc2d5aac2");
+        assert!(template.is_some());
+        assert_eq!(template.unwrap().name, "qcow-image");
+
+        let missing = renderer.get_template_by_id("00000000-0000-0000-0000-000000000000");
         assert!(missing.is_none());
     }
 
@@ -1904,7 +1924,7 @@ mod tests {
 
         // Get the whoami template
         let template = renderer
-            .get_template("whoami")
+            .get_template_by_name("whoami")
             .expect("whoami template should exist");
 
         // whoami template is static - no parameters, no artifacts, no placeholders

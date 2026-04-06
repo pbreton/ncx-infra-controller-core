@@ -34,10 +34,10 @@ pub async fn handle_show(
     format: OutputFormat,
     api_client: &ApiClient,
 ) -> Result<(), CarbideCliError> {
-    if opts.name.as_deref().unwrap_or("").is_empty() {
+    if opts.id.as_deref().unwrap_or("").is_empty() {
         list_all(format, api_client).await
     } else {
-        show_one(opts.name.as_deref().unwrap(), format, api_client).await
+        show_one(opts.id.as_deref().unwrap(), format, api_client).await
     }
 }
 
@@ -75,22 +75,24 @@ async fn list_all(format: OutputFormat, api_client: &ApiClient) -> Result<(), Ca
 }
 
 async fn show_one(
-    name: &str,
+    id_str: &str,
     format: OutputFormat,
     api_client: &ApiClient,
 ) -> Result<(), CarbideCliError> {
+    let id: carbide_uuid::ipxe_template::IpxeTemplateId = id_str
+        .parse()
+        .map_err(|_| CarbideCliError::GenericError(format!("invalid template ID: {}", id_str)))?;
+
     let result = match api_client
         .0
-        .get_ipxe_script_template(rpc::forge::GetIpxeScriptTemplateRequest {
-            name: name.to_string(),
-        })
+        .get_ipxe_script_template(rpc::forge::GetIpxeScriptTemplateRequest { id: Some(id) })
         .await
     {
         Ok(tmpl) => tmpl,
         Err(status) if status.code() == tonic::Code::NotFound => {
             return Err(CarbideCliError::GenericError(format!(
                 "iPXE template not found: {}",
-                name
+                id_str
             )));
         }
         Err(err) => return Err(CarbideCliError::from(err)),

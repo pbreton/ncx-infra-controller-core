@@ -131,20 +131,24 @@ impl From<forgerpc::IpxeScriptTemplate> for IpxeTemplateDetail {
 
 pub async fn detail(
     AxumState(state): AxumState<Arc<Api>>,
-    AxumPath(name): AxumPath<String>,
+    AxumPath(id_str): AxumPath<String>,
 ) -> Response {
-    let (show_json, name) = match name.strip_suffix(".json") {
+    let (show_json, id_str) = match id_str.strip_suffix(".json") {
         Some(n) => (true, n.to_string()),
-        None => (false, name),
+        None => (false, id_str),
     };
 
-    let request =
-        tonic::Request::new(forgerpc::GetIpxeScriptTemplateRequest { name: name.clone() });
+    let id: carbide_uuid::ipxe_template::IpxeTemplateId = match id_str.parse() {
+        Ok(v) => v,
+        Err(_) => return super::not_found_response(id_str),
+    };
+
+    let request = tonic::Request::new(forgerpc::GetIpxeScriptTemplateRequest { id: Some(id) });
 
     let tmpl = match state.get_ipxe_script_template(request).await {
         Ok(resp) => resp.into_inner(),
         Err(err) if err.code() == tonic::Code::NotFound => {
-            return super::not_found_response(name);
+            return super::not_found_response(id_str);
         }
         Err(err) => {
             tracing::error!(%err, "get_ipxe_script_template");
