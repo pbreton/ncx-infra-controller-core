@@ -420,13 +420,13 @@ async fn test_get_ipxe_script_template(pool: sqlx::PgPool) {
         .into_inner();
 
     let first = &all.templates[0];
-    let first_id = first.id.clone().expect("template id must be set");
+    let first_id = first.id.expect("template id must be set");
 
     let resp = env
         .api
         .get_ipxe_script_template(tonic::Request::new(
             rpc::forge::GetIpxeScriptTemplateRequest {
-                id: Some(first_id.clone()),
+                id: Some(first_id),
             },
         ))
         .await

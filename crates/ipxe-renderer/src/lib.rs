@@ -724,13 +724,18 @@ mod tests {
             hash: "placeholder".to_string(),
             tenant_id: None,
             ipxe_template_name: "ubuntu-autoinstall".to_string(),
-            parameters: vec![IpxeScriptParameter {
-                name: "install_iso".to_string(),
-                value: "http://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso"
-                    .to_string(),
-            }],
+            parameters: vec![],
             artifacts: vec![
-                // Missing initrd artifact - should cause validation failure
+                IpxeScriptArtifact {
+                    name: "install_iso".to_string(),
+                    url: "http://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso"
+                        .to_string(),
+                    sha: None,
+                    auth_type: None,
+                    auth_token: None,
+                    cache_strategy: IpxeScriptArtifactCacheStrategy::CacheAsNeeded,
+                    cached_url: None,
+                },
                 IpxeScriptArtifact {
                     name: "kernel".to_string(),
                     url: "http://example.com/kernel".to_string(),
@@ -844,12 +849,18 @@ mod tests {
             hash: "placeholder".to_string(),
             tenant_id: None,
             ipxe_template_name: "ubuntu-autoinstall".to_string(),
-            parameters: vec![IpxeScriptParameter {
-                name: "install_iso".to_string(),
-                value: "http://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso"
-                    .to_string(),
-            }],
+            parameters: vec![],
             artifacts: vec![
+                IpxeScriptArtifact {
+                    name: "install_iso".to_string(),
+                    url: "http://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso"
+                        .to_string(),
+                    sha: None,
+                    auth_type: None,
+                    auth_token: None,
+                    cache_strategy: IpxeScriptArtifactCacheStrategy::CacheAsNeeded,
+                    cached_url: None,
+                },
                 IpxeScriptArtifact {
                     name: "kernel".to_string(),
                     url: "http://archive.ubuntu.com/ubuntu/dists/jammy/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/linux".to_string(),
@@ -903,12 +914,18 @@ mod tests {
             hash: "placeholder".to_string(),
             tenant_id: None,
             ipxe_template_name: "ubuntu-autoinstall".to_string(),
-            parameters: vec![IpxeScriptParameter {
-                name: "install_iso".to_string(),
-                value: "http://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso"
-                    .to_string(),
-            }],
+            parameters: vec![],
             artifacts: vec![
+                IpxeScriptArtifact {
+                    name: "install_iso".to_string(),
+                    url: "http://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso"
+                        .to_string(),
+                    sha: None,
+                    auth_type: None,
+                    auth_token: None,
+                    cache_strategy: IpxeScriptArtifactCacheStrategy::CacheAsNeeded,
+                    cached_url: None,
+                },
                 IpxeScriptArtifact {
                     name: "kernel".to_string(),
                     url: "http://archive.ubuntu.com/ubuntu/dists/jammy/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/linux".to_string(),
@@ -1981,11 +1998,17 @@ mod tests {
             hash: "placeholder".to_string(),
             tenant_id: None,
             ipxe_template_name: "ubuntu-autoinstall".to_string(),
-            parameters: vec![IpxeScriptParameter {
-                name: "install_iso".to_string(),
-                value: "http://releases.ubuntu.com/22.04/ubuntu.iso".to_string(),
-            }],
+            parameters: vec![],
             artifacts: vec![
+                IpxeScriptArtifact {
+                    name: "install_iso".to_string(),
+                    url: "http://releases.ubuntu.com/22.04/ubuntu.iso".to_string(),
+                    sha: None,
+                    auth_type: None,
+                    auth_token: None,
+                    cache_strategy: IpxeScriptArtifactCacheStrategy::RemoteOnly,
+                    cached_url: None,
+                },
                 IpxeScriptArtifact {
                     name: "kernel".to_string(),
                     url: "http://remote.example.com/kernel".to_string(),
@@ -2042,11 +2065,17 @@ mod tests {
             hash: "placeholder".to_string(),
             tenant_id: None,
             ipxe_template_name: "ubuntu-autoinstall".to_string(),
-            parameters: vec![IpxeScriptParameter {
-                name: "install_iso".to_string(),
-                value: "http://releases.ubuntu.com/22.04/ubuntu.iso".to_string(),
-            }],
+            parameters: vec![],
             artifacts: vec![
+                IpxeScriptArtifact {
+                    name: "install_iso".to_string(),
+                    url: "http://releases.ubuntu.com/22.04/ubuntu.iso".to_string(),
+                    sha: None,
+                    auth_type: None,
+                    auth_token: None,
+                    cache_strategy: IpxeScriptArtifactCacheStrategy::LocalOnly,
+                    cached_url: None,
+                },
                 IpxeScriptArtifact {
                     name: "kernel".to_string(),
                     url: "http://site-local.example.com/kernel".to_string(),
@@ -2099,11 +2128,17 @@ mod tests {
             hash: "placeholder".to_string(),
             tenant_id: None,
             ipxe_template_name: "ubuntu-autoinstall".to_string(),
-            parameters: vec![IpxeScriptParameter {
-                name: "install_iso".to_string(),
-                value: "http://releases.ubuntu.com/22.04/ubuntu.iso".to_string(),
-            }],
+            parameters: vec![],
             artifacts: vec![
+                IpxeScriptArtifact {
+                    name: "install_iso".to_string(),
+                    url: "http://releases.ubuntu.com/22.04/ubuntu.iso".to_string(),
+                    sha: None,
+                    auth_type: None,
+                    auth_token: None,
+                    cache_strategy: IpxeScriptArtifactCacheStrategy::CacheAsNeeded,
+                    cached_url: None,
+                },
                 IpxeScriptArtifact {
                     name: "kernel".to_string(),
                     url: "http://remote.example.com/kernel".to_string(),

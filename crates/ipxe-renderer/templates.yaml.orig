@@ -105,8 +105,9 @@ templates:
     name: ubuntu-autoinstall
     description: Template for Ubuntu autoinstall
     scope: public
-    required_artifacts:
+    required_params:
       - install_iso
+    required_artifacts:
       - kernel
       - initrd
     reserved_params:
@@ -115,7 +116,11 @@ templates:
     template: |
       #!ipxe
       # Ubuntu autoinstall template
-      kernel {{kernel}} BOOTIF=01-${netX/mac:hexhyp} ip=dhcp fb=false url={{install_iso}} autoinstall ds=nocloud-net;s=${cloudinit-url} console=tty0 console={{console}},115200 initrd=initrd.magic
+
+      set base_url {{base_url}}
+      set console {{console}}
+
+      kernel {{kernel}} ip=dhcp url={{install_iso}} autoinstall ds=nocloud-net;s=${base_url}/user-data/ console=${console}
       initrd {{initrd}}
       boot
 

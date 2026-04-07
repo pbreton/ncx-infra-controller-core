@@ -3181,21 +3181,26 @@ impl Forge for Api {
 
         let templates = template_names
             .iter()
-            .filter_map(|name| {
-                renderer
-                    .get_template_by_name(name)
-                    .map(|t| ::rpc::forge::IpxeScriptTemplate {
-                        id: t.id.parse().ok(),
-                        name: t.name.clone(),
-                        template: t.template.clone(),
-                        required_params: t.required_params.clone(),
-                        description: t.description.clone(),
-                        reserved_params: t.reserved_params.clone(),
-                        required_artifacts: t.required_artifacts.clone(),
-                        scope: ipxe_script_template_scope_to_proto(t.scope).into(),
-                    })
+            .filter_map(|name| renderer.get_template_by_name(name))
+            .map(|t| {
+                let id = t.id.parse().map_err(|e| {
+                    Status::internal(format!(
+                        "embedded iPXE template '{}' has malformed id '{}': {e}",
+                        t.name, t.id,
+                    ))
+                })?;
+                Ok(::rpc::forge::IpxeScriptTemplate {
+                    id: Some(id),
+                    name: t.name.clone(),
+                    template: t.template.clone(),
+                    required_params: t.required_params.clone(),
+                    description: t.description.clone(),
+                    reserved_params: t.reserved_params.clone(),
+                    required_artifacts: t.required_artifacts.clone(),
+                    scope: ipxe_script_template_scope_to_proto(t.scope).into(),
+                })
             })
-            .collect();
+            .collect::<Result<Vec<_>, Status>>()?;
 
         Ok(tonic::Response::new(::rpc::forge::IpxeScriptTemplateList {
             templates,
