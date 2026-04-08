@@ -15,8 +15,8 @@ templates:
       #!ipxe
 
       # 1. Discover running architecture:
-      iseq ${buildarch} x86_64 && set arch amd64 && goto arch_done ||
-      iseq ${buildarch} arm64 && set arch arm64 && goto arch_done ||
+      iseq ${buildarch} x86_64 && set arch x86_64 && goto arch_done ||
+      iseq ${buildarch} arm64 && set arch aarch64 && goto arch_done ||
       set arch unknown
       :arch_done
       echo
@@ -44,8 +44,8 @@ templates:
       #!ipxe
 
       # 1. Discover running architecture:
-      iseq ${buildarch} x86_64 && set arch amd64 && goto arch_done ||
-      iseq ${buildarch} arm64 && set arch arm64 && goto arch_done ||
+      iseq ${buildarch} x86_64 && set arch x86_64 && goto arch_done ||
+      iseq ${buildarch} arm64 && set arch aarch64 && goto arch_done ||
       set arch unknown
       :arch_done
       echo
@@ -58,7 +58,7 @@ templates:
       set console {{console}}
 
       # 3. Boot qcow-imager with parameters:
-      chain ${base_url}/internal/${buildarch}/qcow-imager.efi loglevel=7 console=tty0 pci=realloc=off console=${console} image_url={{image_url}} {{extra}}
+      chain ${base_url}/internal/${arch}/qcow-imager.efi loglevel=7 console=tty0 pci=realloc=off console=${console} image_url={{image_url}} {{extra}}
       boot
 
   - id: 5c7cfa88-6003-5ac0-b4c0-201eb5b28153

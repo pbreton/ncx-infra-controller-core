@@ -347,6 +347,17 @@ pub async fn update_operating_system(
         }
     })?;
 
+    if existing.ipxe_script.is_some() && req.ipxe_template_name.is_some() {
+        return Err(Status::invalid_argument(
+            "cannot switch from ipxe_script variant to ipxe_template_name variant",
+        ));
+    }
+    if existing.ipxe_template_name.is_some() && req.ipxe_script.is_some() {
+        return Err(Status::invalid_argument(
+            "cannot switch from ipxe_template_name variant to ipxe_script variant",
+        ));
+    }
+
     let effective_template = req
         .ipxe_template_name
         .as_deref()

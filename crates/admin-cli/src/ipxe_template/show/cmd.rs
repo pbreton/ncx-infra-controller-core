@@ -51,6 +51,7 @@ async fn list_all(format: OutputFormat, api_client: &ApiClient) -> Result<(), Ca
     } else {
         let mut table = Table::new();
         table.set_titles(Row::new(vec![
+            Cell::new("ID"),
             Cell::new("Name"),
             Cell::new("Description"),
             Cell::new("Scope"),
@@ -59,7 +60,13 @@ async fn list_all(format: OutputFormat, api_client: &ApiClient) -> Result<(), Ca
         ]));
 
         for tmpl in &result.templates {
+            let id_str = tmpl
+                .id
+                .as_ref()
+                .map(|id| id.to_string())
+                .unwrap_or_default();
             table.add_row(Row::new(vec![
+                Cell::new(&id_str),
                 Cell::new(&tmpl.name),
                 Cell::new(&tmpl.description),
                 Cell::new(scope_display(tmpl.scope)),
@@ -101,6 +108,12 @@ async fn show_one(
     if format == OutputFormat::Json {
         println!("{}", serde_json::to_string_pretty(&result)?);
     } else {
+        let id_str = result
+            .id
+            .as_ref()
+            .map(|id| id.to_string())
+            .unwrap_or_default();
+        println!("ID:          {}", id_str);
         println!("Name:        {}", result.name);
         println!("Description: {}", result.description);
         println!("Scope:       {}", scope_display(result.scope));

@@ -27,6 +27,12 @@ use rpc::forge::forge_server::Forge;
 
 use crate::api::Api;
 
+fn sanitize_os(os: &mut forgerpc::OperatingSystemDefinition) {
+    for artifact in &mut os.ipxe_artifacts {
+        artifact.auth_token = None;
+    }
+}
+
 #[derive(Template)]
 #[template(path = "operating_system_show.html")]
 struct OperatingSystemShow {
@@ -83,7 +89,7 @@ pub async fn show_html(AxumState(state): AxumState<Arc<Api>>) -> Response {
 }
 
 pub async fn show_all_json(AxumState(state): AxumState<Arc<Api>>) -> Response {
-    let oss = match fetch_operating_systems(state).await {
+    let mut oss = match fetch_operating_systems(state).await {
         Ok(v) => v,
         Err(err) => {
             tracing::error!(%err, "fetch_operating_systems");
@@ -94,6 +100,7 @@ pub async fn show_all_json(AxumState(state): AxumState<Arc<Api>>) -> Response {
                 .into_response();
         }
     };
+    oss.iter_mut().for_each(sanitize_os);
     (StatusCode::OK, Json(oss)).into_response()
 }
 
@@ -246,6 +253,8 @@ pub async fn detail(
     };
 
     if show_json {
+        let mut os = os;
+        sanitize_os(&mut os);
         return (StatusCode::OK, Json(os)).into_response();
     }
 

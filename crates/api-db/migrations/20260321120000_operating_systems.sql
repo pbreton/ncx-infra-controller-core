@@ -26,7 +26,10 @@ CREATE TABLE IF NOT EXISTS operating_systems (
     ipxe_template_name      VARCHAR(256),
     ipxe_parameters         jsonb,
     ipxe_artifacts          jsonb,
-    ipxe_definition_hash    VARCHAR(64)
+    ipxe_definition_hash    VARCHAR(64),
+
+    CONSTRAINT operating_systems_ipxe_variant_check
+        CHECK ((ipxe_script IS NOT NULL) != (ipxe_template_name IS NOT NULL))
 );
 
 CREATE INDEX IF NOT EXISTS operating_systems_org_idx ON operating_systems(org) WHERE deleted IS NULL;

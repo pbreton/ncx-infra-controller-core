@@ -425,9 +425,7 @@ async fn test_get_ipxe_script_template(pool: sqlx::PgPool) {
     let resp = env
         .api
         .get_ipxe_script_template(tonic::Request::new(
-            rpc::forge::GetIpxeScriptTemplateRequest {
-                id: Some(first_id),
-            },
+            rpc::forge::GetIpxeScriptTemplateRequest { id: Some(first_id) },
         ))
         .await
         .unwrap()

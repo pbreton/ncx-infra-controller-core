@@ -25,11 +25,7 @@ use crate::rpc::ApiClient;
 pub async fn update(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> {
     let id = str_to_os_id(&opts.id)?;
 
-    let ipxe_parameters = if opts.params.is_empty() {
-        None
-    } else {
-        Some(IpxeScriptParameters { items: opts.params })
-    };
+    let ipxe_parameters = opts.params.map(|items| IpxeScriptParameters { items });
 
     let os = api_client
         .0

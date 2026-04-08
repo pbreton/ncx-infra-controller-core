@@ -31,7 +31,7 @@ pub async fn create(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> 
             name: opts.name,
             tenant_organization_id: opts.org,
             description: opts.description,
-            is_active: opts.is_active,
+            is_active: opts.is_active.unwrap_or(true),
             allow_override: opts.allow_override,
             phone_home_enabled: opts.phone_home_enabled,
             user_data: opts.user_data,

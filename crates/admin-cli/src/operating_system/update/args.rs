@@ -61,7 +61,8 @@ pub struct Args {
         long = "param",
         value_name = "KEY=VALUE",
         value_parser = parse_param,
-        help = "Replace all iPXE parameters with these KEY=VALUE pairs. May be repeated."
+        num_args = 0..,
+        help = "Replace all iPXE parameters with these KEY=VALUE pairs. May be repeated. Pass without values to clear."
     )]
-    pub params: Vec<IpxeScriptParameter>,
+    pub params: Option<Vec<IpxeScriptParameter>>,
 }

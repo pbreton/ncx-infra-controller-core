@@ -37,12 +37,8 @@ pub struct Args {
     #[clap(short, long, help = "Optional human-readable description.")]
     pub description: Option<String>,
 
-    #[clap(
-        long,
-        default_value = "true",
-        help = "Whether this OS definition is active."
-    )]
-    pub is_active: bool,
+    #[clap(long, help = "Whether this OS definition is active (default: true).")]
+    pub is_active: Option<bool>,
 
     #[clap(
         long,
