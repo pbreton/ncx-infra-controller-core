@@ -197,23 +197,30 @@ impl PxeInstructions {
     ) -> Result<String, CarbideError> {
         let renderer = DefaultIpxeScriptRenderer::new();
 
-        // Build reserved parameters
-        let mut reserved_params = vec![IpxeScriptParameter {
-            name: "base_url".to_string(),
-            value: base_url.to_string(),
-        }];
+        let mut reserved_params = Vec::new();
 
-        // Check if template requires console parameter
-        if let Some(template) = renderer.get_template_by_name(&ipxeos.ipxe_template_name)
-            && template
+        if let Some(template) = renderer.get_template_by_name(&ipxeos.ipxe_template_name) {
+            if template
+                .reserved_params
+                .iter()
+                .any(|p| p.to_lowercase() == "base_url")
+            {
+                reserved_params.push(IpxeScriptParameter {
+                    name: "base_url".to_string(),
+                    value: base_url.to_string(),
+                });
+            }
+
+            if template
                 .reserved_params
                 .iter()
                 .any(|p| p.to_lowercase() == "console")
-        {
-            reserved_params.push(IpxeScriptParameter {
-                name: "console".to_string(),
-                value: console.to_string(),
-            });
+            {
+                reserved_params.push(IpxeScriptParameter {
+                    name: "console".to_string(),
+                    value: console.to_string(),
+                });
+            }
         }
 
         renderer
