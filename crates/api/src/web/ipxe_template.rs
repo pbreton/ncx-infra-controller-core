@@ -34,6 +34,7 @@ struct IpxeTemplateShow {
 }
 
 struct IpxeTemplateRowDisplay {
+    id: String,
     name: String,
     description: String,
     scope: String,
@@ -47,6 +48,7 @@ impl From<&forgerpc::IpxeScriptTemplate> for IpxeTemplateRowDisplay {
             .map(|s| format!("{s:?}"))
             .unwrap_or_else(|_| "Unknown".to_string());
         Self {
+            id: tmpl.id.as_ref().map(|u| u.to_string()).unwrap_or_default(),
             name: tmpl.name.clone(),
             description: tmpl.description.clone(),
             scope,
