@@ -124,24 +124,18 @@ templates:
     description: Template for DGX OS autoinstall
     scope: public
     required_params:
-      - install_iso
-      - force_ai
-      - cloudinit-url
+      - force_platform
     required_artifacts:
+      - install_iso
       - kernel
       - initrd
+      - ai_cfg
     reserved_params:
       - console
     template: |
       #!ipxe
-
-      # Get carbide-core-generated reserved values (console specific to hardware):
-      set console {{console}}
-
-      kernel {{kernel}} fsck.mode=skip autoinstall ip=dhcp url={{install_iso}} nvme-core.multipath=n nouveau.modeset=0 \
-        console=tty0 console=${console} nooemconfig force-ai={{force_ai}}/forge-ai.yaml ds=nocloud-net;s={{cloudinit-url}}
+      kernel {{kernel}} fsck.mode=skip autoinstall ip=dhcp BOOTIF=01-${netX/mac:hexhyp} url={{install_iso}} nvme-core.multipath=n nouveau.modeset=0 console=tty0 console={{console}},115200 nooemconfig force-platform={{force_platform}} force-ai={{ai_cfg}} ds=nocloud-net;s=${cloudinit-url}
       initrd {{initrd}}
-      
       boot
 
   - id: fd4f4413-18c4-5159-8cc0-7a64be5f98b9
