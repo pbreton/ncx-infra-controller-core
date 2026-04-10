@@ -16,7 +16,7 @@
  */
 
 use ::rpc::admin_cli::{CarbideCliError, CarbideCliResult, OutputFormat};
-use ::rpc::forge::IpxeScriptArtifactCacheStrategy;
+use ::rpc::forge::IpxeTemplateArtifactCacheStrategy;
 use prettytable::{Cell, Row, Table};
 
 use super::args::Args;
@@ -32,8 +32,8 @@ pub async fn set_cached_url(
 
     let resp = api_client
         .0
-        .update_operating_system_cachable_ipxe_script_artifacts(
-            ::rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(
+            ::rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(id),
                 updates: opts.updates,
             },
@@ -66,11 +66,11 @@ pub async fn set_cached_url(
     ]));
 
     for a in &resp.artifacts {
-        let cache = match IpxeScriptArtifactCacheStrategy::try_from(a.cache_strategy) {
-            Ok(IpxeScriptArtifactCacheStrategy::CacheAsNeeded) => "cache_as_needed",
-            Ok(IpxeScriptArtifactCacheStrategy::LocalOnly) => "local_only",
-            Ok(IpxeScriptArtifactCacheStrategy::CachedOnly) => "cached_only",
-            Ok(IpxeScriptArtifactCacheStrategy::RemoteOnly) => "remote_only",
+        let cache = match IpxeTemplateArtifactCacheStrategy::try_from(a.cache_strategy) {
+            Ok(IpxeTemplateArtifactCacheStrategy::CacheAsNeeded) => "cache_as_needed",
+            Ok(IpxeTemplateArtifactCacheStrategy::LocalOnly) => "local_only",
+            Ok(IpxeTemplateArtifactCacheStrategy::CachedOnly) => "cached_only",
+            Ok(IpxeTemplateArtifactCacheStrategy::RemoteOnly) => "remote_only",
             _ => "unknown",
         };
         table.add_row(Row::new(vec![

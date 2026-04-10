@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-use ::rpc::forge::IpxeScriptParameter;
+use ::rpc::forge::IpxeTemplateParameter;
 use clap::Parser;
 
 use crate::operating_system::common::parse_param;
@@ -45,7 +45,7 @@ pub struct Args {
 
     #[clap(
         long,
-        conflicts_with = "ipxe_template_name",
+        conflicts_with = "ipxe_template_id",
         help = "Update the raw iPXE boot script."
     )]
     pub ipxe_script: Option<String>,
@@ -53,9 +53,9 @@ pub struct Args {
     #[clap(
         long,
         conflicts_with = "ipxe_script",
-        help = "Update the iPXE template name."
+        help = "Update the iPXE template ID."
     )]
-    pub ipxe_template_name: Option<String>,
+    pub ipxe_template_id: Option<String>,
 
     #[clap(
         long = "param",
@@ -64,5 +64,5 @@ pub struct Args {
         num_args = 0..,
         help = "Replace all iPXE parameters with these KEY=VALUE pairs. May be repeated. Pass without values to clear."
     )]
-    pub params: Option<Vec<IpxeScriptParameter>>,
+    pub params: Option<Vec<IpxeTemplateParameter>>,
 }

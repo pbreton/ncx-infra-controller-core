@@ -16,7 +16,7 @@
  */
 
 use carbide_ipxe_renderer::{
-    IpxeScriptArtifact, IpxeScriptArtifactCacheStrategy, IpxeScriptParameter,
+    IpxeTemplateArtifact, IpxeTemplateArtifactCacheStrategy, IpxeTemplateParameter,
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
@@ -30,13 +30,13 @@ pub const OS_STATUS_PROVISIONING: &str = "PROVISIONING";
 
 fn ipxe_parameters_from_json(
     j: Option<&sqlx::types::Json<serde_json::Value>>,
-) -> Vec<IpxeScriptParameter> {
+) -> Vec<IpxeTemplateParameter> {
     j.and_then(|j| j.0.as_array())
         .map(|arr| {
             arr.iter()
                 .filter_map(|v| {
                     let obj = v.as_object()?;
-                    Some(IpxeScriptParameter {
+                    Some(IpxeTemplateParameter {
                         name: obj.get("name")?.as_str()?.to_string(),
                         value: obj.get("value")?.as_str().unwrap_or("").to_string(),
                     })
@@ -48,7 +48,7 @@ fn ipxe_parameters_from_json(
 
 fn ipxe_artifacts_from_json(
     j: Option<&sqlx::types::Json<serde_json::Value>>,
-) -> Vec<IpxeScriptArtifact> {
+) -> Vec<IpxeTemplateArtifact> {
     j.and_then(|j| j.0.as_array())
         .map(|arr| {
             arr.iter()
@@ -59,12 +59,12 @@ fn ipxe_artifacts_from_json(
                         .and_then(|v| v.as_i64())
                         .unwrap_or(0)
                     {
-                        1 => IpxeScriptArtifactCacheStrategy::LocalOnly,
-                        2 => IpxeScriptArtifactCacheStrategy::CachedOnly,
-                        3 => IpxeScriptArtifactCacheStrategy::RemoteOnly,
-                        _ => IpxeScriptArtifactCacheStrategy::CacheAsNeeded,
+                        1 => IpxeTemplateArtifactCacheStrategy::LocalOnly,
+                        2 => IpxeTemplateArtifactCacheStrategy::CachedOnly,
+                        3 => IpxeTemplateArtifactCacheStrategy::RemoteOnly,
+                        _ => IpxeTemplateArtifactCacheStrategy::CacheAsNeeded,
                     };
-                    Some(IpxeScriptArtifact {
+                    Some(IpxeTemplateArtifact {
                         name: obj.get("name")?.as_str()?.to_string(),
                         url: obj.get("url")?.as_str().unwrap_or("").to_string(),
                         sha: obj.get("sha").and_then(|v| v.as_str()).map(String::from),
@@ -104,10 +104,10 @@ impl From<&OperatingSystem> for model::operating_system_definition::OperatingSys
             created: row.created.to_rfc3339(),
             updated: row.updated.to_rfc3339(),
             ipxe_script: row.ipxe_script.clone(),
-            ipxe_template_name: row.ipxe_template_name.clone(),
-            ipxe_parameters: ipxe_parameters_from_json(row.ipxe_parameters.as_ref()),
-            ipxe_artifacts: ipxe_artifacts_from_json(row.ipxe_artifacts.as_ref()),
-            ipxe_definition_hash: row.ipxe_definition_hash.clone(),
+            ipxe_template_id: row.ipxe_template_id.clone(),
+            ipxe_template_parameters: ipxe_parameters_from_json(row.ipxe_parameters.as_ref()),
+            ipxe_template_artifacts: ipxe_artifacts_from_json(row.ipxe_artifacts.as_ref()),
+            ipxe_template_definition_hash: row.ipxe_definition_hash.clone(),
         }
     }
 }
@@ -130,7 +130,7 @@ pub struct OperatingSystem {
     pub updated: DateTime<Utc>,
     pub deleted: Option<DateTime<Utc>>,
     pub ipxe_script: Option<String>,
-    pub ipxe_template_name: Option<String>,
+    pub ipxe_template_id: Option<String>,
     pub ipxe_parameters: Option<sqlx::types::Json<serde_json::Value>>,
     pub ipxe_artifacts: Option<sqlx::types::Json<serde_json::Value>>,
     pub ipxe_definition_hash: Option<String>,
@@ -142,7 +142,7 @@ pub async fn get(
 ) -> Result<OperatingSystem, DatabaseError> {
     let query = "SELECT id, name, description, org, type, status, is_active, allow_override,
         phone_home_enabled, user_data, created, updated, deleted,
-        ipxe_script, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
+        ipxe_script, ipxe_template_id, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
         FROM operating_systems WHERE id = $1 AND deleted IS NULL";
     sqlx::query_as::<_, OperatingSystem>(query)
         .bind(id)
@@ -161,7 +161,7 @@ pub async fn get_many(
     }
     let query = "SELECT id, name, description, org, type, status, is_active, allow_override,
         phone_home_enabled, user_data, created, updated, deleted,
-        ipxe_script, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
+        ipxe_script, ipxe_template_id, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash
         FROM operating_systems WHERE id = ANY($1) AND deleted IS NULL";
     sqlx::query_as::<_, OperatingSystem>(query)
         .bind(ids)
@@ -205,7 +205,7 @@ pub struct CreateOperatingSystem {
     pub phone_home_enabled: bool,
     pub user_data: Option<String>,
     pub ipxe_script: Option<String>,
-    pub ipxe_template_name: Option<String>,
+    pub ipxe_template_id: Option<String>,
     pub ipxe_parameters: Option<serde_json::Value>,
     pub ipxe_artifacts: Option<serde_json::Value>,
     pub ipxe_definition_hash: Option<String>,
@@ -218,11 +218,11 @@ pub async fn create(
     let row = if let Some(id) = input.id {
         let query = "INSERT INTO operating_systems
             (id, name, description, org, type, status, is_active, allow_override, phone_home_enabled, user_data,
-             ipxe_script, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
+             ipxe_script, ipxe_template_id, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             RETURNING id, name, description, org, type, status, is_active, allow_override,
             phone_home_enabled, user_data, created, updated, deleted,
-            ipxe_script, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
+            ipxe_script, ipxe_template_id, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
         sqlx::query_as::<_, OperatingSystem>(query)
             .bind(id)
             .bind(&input.name)
@@ -235,7 +235,7 @@ pub async fn create(
             .bind(input.phone_home_enabled)
             .bind(&input.user_data)
             .bind(&input.ipxe_script)
-            .bind(&input.ipxe_template_name)
+            .bind(&input.ipxe_template_id)
             .bind(input.ipxe_parameters.as_ref().map(sqlx::types::Json))
             .bind(input.ipxe_artifacts.as_ref().map(sqlx::types::Json))
             .bind(&input.ipxe_definition_hash)
@@ -245,11 +245,11 @@ pub async fn create(
     } else {
         let query = "INSERT INTO operating_systems
             (name, description, org, type, status, is_active, allow_override, phone_home_enabled, user_data,
-             ipxe_script, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
+             ipxe_script, ipxe_template_id, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             RETURNING id, name, description, org, type, status, is_active, allow_override,
             phone_home_enabled, user_data, created, updated, deleted,
-            ipxe_script, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
+            ipxe_script, ipxe_template_id, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
         sqlx::query_as::<_, OperatingSystem>(query)
             .bind(&input.name)
             .bind(&input.description)
@@ -261,7 +261,7 @@ pub async fn create(
             .bind(input.phone_home_enabled)
             .bind(&input.user_data)
             .bind(&input.ipxe_script)
-            .bind(&input.ipxe_template_name)
+            .bind(&input.ipxe_template_id)
             .bind(input.ipxe_parameters.as_ref().map(sqlx::types::Json))
             .bind(input.ipxe_artifacts.as_ref().map(sqlx::types::Json))
             .bind(&input.ipxe_definition_hash)
@@ -282,7 +282,7 @@ pub struct UpdateOperatingSystem {
     pub phone_home_enabled: Option<bool>,
     pub user_data: Option<String>,
     pub ipxe_script: Option<String>,
-    pub ipxe_template_name: Option<String>,
+    pub ipxe_template_id: Option<String>,
     pub ipxe_parameters: Option<serde_json::Value>,
     pub ipxe_artifacts: Option<serde_json::Value>,
     pub ipxe_definition_hash: Option<String>,
@@ -311,10 +311,10 @@ pub async fn update(
         .ipxe_script
         .as_deref()
         .or(existing.ipxe_script.as_deref());
-    let ipxe_template_name = input
-        .ipxe_template_name
+    let ipxe_template_id = input
+        .ipxe_template_id
         .as_deref()
-        .or(existing.ipxe_template_name.as_deref());
+        .or(existing.ipxe_template_id.as_deref());
     let status = input.status.as_deref().unwrap_or(&existing.status);
 
     let ipxe_parameters: Option<sqlx::types::Json<&serde_json::Value>> = input
@@ -336,12 +336,12 @@ pub async fn update(
     let query = "UPDATE operating_systems SET
         name = $1, description = $2, is_active = $3, allow_override = $4,
         phone_home_enabled = $5, user_data = $6, ipxe_script = $7,
-        ipxe_template_name = $8, ipxe_parameters = $9, ipxe_artifacts = $10,
+        ipxe_template_id = $8, ipxe_parameters = $9, ipxe_artifacts = $10,
         ipxe_definition_hash = $11, status = $12, updated = NOW()
         WHERE id = $13 AND deleted IS NULL
         RETURNING id, name, description, org, type, status, is_active, allow_override,
         phone_home_enabled, user_data, created, updated, deleted,
-        ipxe_script, ipxe_template_name, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
+        ipxe_script, ipxe_template_id, ipxe_parameters, ipxe_artifacts, ipxe_definition_hash";
     sqlx::query_as::<_, OperatingSystem>(query)
         .bind(name)
         .bind(description)
@@ -350,7 +350,7 @@ pub async fn update(
         .bind(phone_home_enabled)
         .bind(user_data)
         .bind(ipxe_script)
-        .bind(ipxe_template_name)
+        .bind(ipxe_template_id)
         .bind(ipxe_parameters)
         .bind(ipxe_artifacts)
         .bind(ipxe_definition_hash)

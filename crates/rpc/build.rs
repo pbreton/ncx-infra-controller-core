@@ -113,19 +113,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .type_attribute("forge.InstanceStorageConfig", "#[derive(serde::Serialize)]")
         .type_attribute(
-            "forge.IpxeScriptParameter",
+            "forge.IpxeTemplateParameter",
             "#[derive(serde::Deserialize, serde::Serialize)]",
         )
         .type_attribute(
-            "forge.IpxeScriptArtifact",
+            "forge.IpxeTemplateArtifact",
             "#[derive(serde::Deserialize, serde::Serialize)]",
         )
         .type_attribute(
-            "forge.IpxeScriptTemplate",
+            "forge.IpxeTemplate",
             "#[derive(serde::Deserialize, serde::Serialize)]",
         )
         .type_attribute(
-            "forge.IpxeScriptArtifactCacheStrategy",
+            "forge.IpxeTemplateArtifactCacheStrategy",
             "#[derive(serde::Deserialize, serde::Serialize)]",
         )
         .type_attribute("forge.TenantConfig", "#[derive(serde::Serialize)]")

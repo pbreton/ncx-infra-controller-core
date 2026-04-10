@@ -17,7 +17,7 @@
 
 use ::rpc::admin_cli::{CarbideCliError, CarbideCliResult, OutputFormat};
 use ::rpc::forge::{
-    IpxeScriptArtifactCacheStrategy, OperatingSystemSearchFilter, OperatingSystemType,
+    IpxeTemplateArtifactCacheStrategy, OperatingSystemSearchFilter, OperatingSystemType,
 };
 use prettytable::{Cell, Row, Table};
 
@@ -91,19 +91,19 @@ async fn list_all(
     ]));
 
     for os in &operating_systems {
-        let params_str = if os.ipxe_parameters.is_empty() {
+        let params_str = if os.ipxe_template_parameters.is_empty() {
             "-".to_string()
         } else {
-            os.ipxe_parameters
+            os.ipxe_template_parameters
                 .iter()
                 .map(|p| format!("{}={}", p.name, p.value))
                 .collect::<Vec<_>>()
                 .join("\n")
         };
-        let artifacts_str = if os.ipxe_artifacts.is_empty() {
+        let artifacts_str = if os.ipxe_template_artifacts.is_empty() {
             "-".to_string()
         } else {
-            os.ipxe_artifacts
+            os.ipxe_template_artifacts
                 .iter()
                 .map(|a| format!("{}: {}", a.name, a.url))
                 .collect::<Vec<_>>()
@@ -119,7 +119,11 @@ async fn list_all(
                     .map(|t| t.as_str_name())
                     .unwrap_or("UNKNOWN"),
             ),
-            Cell::new(os.ipxe_template_name.as_deref().unwrap_or("-")),
+            Cell::new(
+                &os.ipxe_template_id
+                    .map(|id| id.to_string())
+                    .unwrap_or("-".to_string()),
+            ),
             Cell::new(&params_str),
             Cell::new(&artifacts_str),
             Cell::new(if os.is_active { "yes" } else { "no" }),
@@ -186,24 +190,24 @@ async fn show_one(
     if let Some(script) = &os.ipxe_script {
         println!("\niPXE Script:\n---\n{script}\n---");
     }
-    if let Some(tmpl) = &os.ipxe_template_name {
-        println!("iPXE Template:       {tmpl}");
+    if let Some(tmpl_id) = &os.ipxe_template_id {
+        println!("iPXE Template ID:    {tmpl_id}");
     }
 
-    if !os.ipxe_parameters.is_empty() {
+    if !os.ipxe_template_parameters.is_empty() {
         println!("\niPXE Parameters:");
-        for p in &os.ipxe_parameters {
+        for p in &os.ipxe_template_parameters {
             println!("  {} = {}", p.name, p.value);
         }
     }
-    if !os.ipxe_artifacts.is_empty() {
+    if !os.ipxe_template_artifacts.is_empty() {
         println!("\niPXE Artifacts:");
-        for a in &os.ipxe_artifacts {
-            let cache = match IpxeScriptArtifactCacheStrategy::try_from(a.cache_strategy) {
-                Ok(IpxeScriptArtifactCacheStrategy::CacheAsNeeded) => "cache_as_needed",
-                Ok(IpxeScriptArtifactCacheStrategy::LocalOnly) => "local_only",
-                Ok(IpxeScriptArtifactCacheStrategy::CachedOnly) => "cached_only",
-                Ok(IpxeScriptArtifactCacheStrategy::RemoteOnly) => "remote_only",
+        for a in &os.ipxe_template_artifacts {
+            let cache = match IpxeTemplateArtifactCacheStrategy::try_from(a.cache_strategy) {
+                Ok(IpxeTemplateArtifactCacheStrategy::CacheAsNeeded) => "cache_as_needed",
+                Ok(IpxeTemplateArtifactCacheStrategy::LocalOnly) => "local_only",
+                Ok(IpxeTemplateArtifactCacheStrategy::CachedOnly) => "cached_only",
+                Ok(IpxeTemplateArtifactCacheStrategy::RemoteOnly) => "remote_only",
                 _ => "cache_as_needed",
             };
             println!("  {}:", a.name);

@@ -16,16 +16,21 @@
  */
 
 use ::rpc::admin_cli::{CarbideCliError, CarbideCliResult};
-use ::rpc::forge::{IpxeScriptParameters, UpdateOperatingSystemRequest};
+use ::rpc::forge::{IpxeTemplateParameters, UpdateOperatingSystemRequest};
 
 use super::args::Args;
-use crate::operating_system::common::str_to_os_id;
+use crate::operating_system::common::{str_to_ipxe_template_id, str_to_os_id};
 use crate::rpc::ApiClient;
 
 pub async fn update(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> {
     let id = str_to_os_id(&opts.id)?;
+    let ipxe_template_id = opts
+        .ipxe_template_id
+        .as_deref()
+        .map(str_to_ipxe_template_id)
+        .transpose()?;
 
-    let ipxe_parameters = opts.params.map(|items| IpxeScriptParameters { items });
+    let ipxe_template_parameters = opts.params.map(|items| IpxeTemplateParameters { items });
 
     let os = api_client
         .0
@@ -38,10 +43,10 @@ pub async fn update(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> 
             phone_home_enabled: opts.phone_home_enabled,
             user_data: opts.user_data,
             ipxe_script: opts.ipxe_script,
-            ipxe_template_name: opts.ipxe_template_name,
-            ipxe_parameters,
-            ipxe_artifacts: None,
-            ipxe_definition_hash: None,
+            ipxe_template_id,
+            ipxe_template_parameters,
+            ipxe_template_artifacts: None,
+            ipxe_template_definition_hash: None,
         })
         .await
         .map_err(CarbideCliError::from)?;

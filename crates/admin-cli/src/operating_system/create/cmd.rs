@@ -19,11 +19,16 @@ use ::rpc::admin_cli::{CarbideCliError, CarbideCliResult};
 use ::rpc::forge::CreateOperatingSystemRequest;
 
 use super::args::Args;
-use crate::operating_system::common::str_to_os_id;
+use crate::operating_system::common::{str_to_ipxe_template_id, str_to_os_id};
 use crate::rpc::ApiClient;
 
 pub async fn create(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> {
     let id = opts.id.as_deref().map(str_to_os_id).transpose()?;
+    let ipxe_template_id = opts
+        .ipxe_template_id
+        .as_deref()
+        .map(str_to_ipxe_template_id)
+        .transpose()?;
 
     let os = api_client
         .0
@@ -37,9 +42,9 @@ pub async fn create(opts: Args, api_client: &ApiClient) -> CarbideCliResult<()> 
             user_data: opts.user_data,
             id,
             ipxe_script: opts.ipxe_script,
-            ipxe_template_name: opts.ipxe_template_name,
-            ipxe_parameters: opts.params,
-            ipxe_artifacts: vec![],
+            ipxe_template_id,
+            ipxe_template_parameters: opts.params,
+            ipxe_template_artifacts: vec![],
         })
         .await
         .map_err(CarbideCliError::from)?;

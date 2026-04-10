@@ -18,8 +18,8 @@
 use carbide_uuid::operating_system::OperatingSystemId;
 use rpc::forge::forge_server::Forge;
 use rpc::forge::{
-    IpxeScriptArtifact, IpxeScriptArtifactCacheStrategy, IpxeScriptArtifacts, OperatingSystemType,
-    TenantState,
+    IpxeTemplateArtifact, IpxeTemplateArtifactCacheStrategy, IpxeTemplateArtifacts,
+    OperatingSystemType, TenantState,
 };
 use tonic::Code;
 
@@ -42,9 +42,9 @@ async fn test_create_operating_system_ipxe(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: Some("cloud-init data".to_string()),
                 ipxe_script: Some("chain --autofree https://boot.netboot.xyz".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await
@@ -63,7 +63,7 @@ async fn test_create_operating_system_ipxe(pool: sqlx::PgPool) {
         os.ipxe_script.as_deref(),
         Some("chain --autofree https://boot.netboot.xyz")
     );
-    assert!(os.ipxe_template_name.is_none());
+    assert!(os.ipxe_template_id.is_none());
     assert!(os.id.is_some());
 }
 
@@ -84,9 +84,9 @@ async fn test_create_operating_system_requires_name(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: Some("chain http://example.com".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await;
@@ -112,9 +112,9 @@ async fn test_create_operating_system_requires_variant(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: None,
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await;
@@ -140,9 +140,9 @@ async fn test_get_operating_system(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: Some("chain http://boot.example.com".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await
@@ -191,9 +191,9 @@ async fn test_update_operating_system(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: Some("chain http://example.com".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await
@@ -214,10 +214,10 @@ async fn test_update_operating_system(pool: sqlx::PgPool) {
                 phone_home_enabled: Some(true),
                 user_data: Some("new user-data".to_string()),
                 ipxe_script: Some("chain http://updated.example.com".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: None,
-                ipxe_artifacts: None,
-                ipxe_definition_hash: None,
+                ipxe_template_id: None,
+                ipxe_template_parameters: None,
+                ipxe_template_artifacts: None,
+                ipxe_template_definition_hash: None,
             },
         ))
         .await
@@ -253,9 +253,9 @@ async fn test_delete_operating_system(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: Some("chain http://example.com".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await
@@ -292,9 +292,9 @@ async fn test_find_operating_system_ids(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: Some("chain http://one.example.com".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await
@@ -314,9 +314,9 @@ async fn test_find_operating_system_ids(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: Some("chain http://two.example.com".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await
@@ -358,9 +358,9 @@ async fn test_find_operating_systems_by_ids(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: Some("chain http://one.example.com".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await
@@ -383,14 +383,12 @@ async fn test_find_operating_systems_by_ids(pool: sqlx::PgPool) {
 }
 
 #[crate::sqlx_test]
-async fn test_list_ipxe_script_templates(pool: sqlx::PgPool) {
+async fn test_list_ipxe_templates(pool: sqlx::PgPool) {
     let env = create_test_env(pool).await;
 
     let resp = env
         .api
-        .list_ipxe_script_templates(tonic::Request::new(
-            rpc::forge::ListIpxeScriptTemplatesRequest {},
-        ))
+        .list_ipxe_templates(tonic::Request::new(rpc::forge::ListIpxeTemplatesRequest {}))
         .await
         .unwrap()
         .into_inner();
@@ -407,14 +405,12 @@ async fn test_list_ipxe_script_templates(pool: sqlx::PgPool) {
 }
 
 #[crate::sqlx_test]
-async fn test_get_ipxe_script_template(pool: sqlx::PgPool) {
+async fn test_get_ipxe_template(pool: sqlx::PgPool) {
     let env = create_test_env(pool).await;
 
     let all = env
         .api
-        .list_ipxe_script_templates(tonic::Request::new(
-            rpc::forge::ListIpxeScriptTemplatesRequest {},
-        ))
+        .list_ipxe_templates(tonic::Request::new(rpc::forge::ListIpxeTemplatesRequest {}))
         .await
         .unwrap()
         .into_inner();
@@ -424,9 +420,9 @@ async fn test_get_ipxe_script_template(pool: sqlx::PgPool) {
 
     let resp = env
         .api
-        .get_ipxe_script_template(tonic::Request::new(
-            rpc::forge::GetIpxeScriptTemplateRequest { id: Some(first_id) },
-        ))
+        .get_ipxe_template(tonic::Request::new(rpc::forge::GetIpxeTemplateRequest {
+            id: Some(first_id),
+        }))
         .await
         .unwrap()
         .into_inner();
@@ -458,37 +454,37 @@ async fn create_os_with_artifacts(
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: None,
-                ipxe_template_name: Some("qcow-image".to_string()),
-                ipxe_parameters: vec![rpc::forge::IpxeScriptParameter {
+                ipxe_template_id: Some("ea756ddd-add3-5e42-a202-44bfc2d5aac2".parse().unwrap()),
+                ipxe_template_parameters: vec![rpc::forge::IpxeTemplateParameter {
                     name: "image_url".to_string(),
                     value: "http://example.com/image.qcow2".to_string(),
                 }],
-                ipxe_artifacts: vec![
-                    IpxeScriptArtifact {
+                ipxe_template_artifacts: vec![
+                    IpxeTemplateArtifact {
                         name: "kernel".to_string(),
                         url: "http://example.com/kernel".to_string(),
                         sha: None,
                         auth_type: None,
                         auth_token: None,
-                        cache_strategy: IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                        cache_strategy: IpxeTemplateArtifactCacheStrategy::CachedOnly as i32,
                         cached_url: None,
                     },
-                    IpxeScriptArtifact {
+                    IpxeTemplateArtifact {
                         name: "initrd".to_string(),
                         url: "http://example.com/initrd".to_string(),
                         sha: None,
                         auth_type: None,
                         auth_token: None,
-                        cache_strategy: IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                        cache_strategy: IpxeTemplateArtifactCacheStrategy::CachedOnly as i32,
                         cached_url: None,
                     },
-                    IpxeScriptArtifact {
+                    IpxeTemplateArtifact {
                         name: "overlay".to_string(),
                         url: "http://example.com/overlay".to_string(),
                         sha: None,
                         auth_type: None,
                         auth_token: None,
-                        cache_strategy: IpxeScriptArtifactCacheStrategy::CacheAsNeeded as i32,
+                        cache_strategy: IpxeTemplateArtifactCacheStrategy::CacheAsNeeded as i32,
                         cached_url: None,
                     },
                 ],
@@ -501,11 +497,11 @@ async fn create_os_with_artifacts(
 }
 
 // ---------------------------------------------------------------------------
-// GetOperatingSystemCachableIpxeScriptArtifacts tests
+// GetOperatingSystemCachableIpxeTemplateArtifacts tests
 // ---------------------------------------------------------------------------
 
 #[crate::sqlx_test]
-async fn test_get_operating_system_cachable_ipxe_script_artifacts_returns_ordered_list(
+async fn test_get_operating_system_cachable_ipxe_template_artifacts_returns_ordered_list(
     pool: sqlx::PgPool,
 ) {
     let env = create_test_env(pool).await;
@@ -513,8 +509,8 @@ async fn test_get_operating_system_cachable_ipxe_script_artifacts_returns_ordere
 
     let resp = env
         .api
-        .get_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::GetOperatingSystemCachableIpxeScriptArtifactsRequest { id: Some(os_id) },
+        .get_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::GetOperatingSystemCachableIpxeTemplateArtifactsRequest { id: Some(os_id) },
         ))
         .await
         .unwrap()
@@ -527,14 +523,14 @@ async fn test_get_operating_system_cachable_ipxe_script_artifacts_returns_ordere
 }
 
 #[crate::sqlx_test]
-async fn test_get_operating_system_cachable_ipxe_script_artifacts_not_found(pool: sqlx::PgPool) {
+async fn test_get_operating_system_cachable_ipxe_template_artifacts_not_found(pool: sqlx::PgPool) {
     let env = create_test_env(pool).await;
     let id: OperatingSystemId = uuid::Uuid::nil().into();
 
     let resp = env
         .api
-        .get_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::GetOperatingSystemCachableIpxeScriptArtifactsRequest { id: Some(id) },
+        .get_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::GetOperatingSystemCachableIpxeTemplateArtifactsRequest { id: Some(id) },
         ))
         .await;
 
@@ -543,7 +539,7 @@ async fn test_get_operating_system_cachable_ipxe_script_artifacts_not_found(pool
 }
 
 // ---------------------------------------------------------------------------
-// UpdateOperatingSystemCachableIpxeScriptArtifacts tests
+// UpdateOperatingSystemCachableIpxeTemplateArtifacts tests
 // ---------------------------------------------------------------------------
 
 #[crate::sqlx_test]
@@ -554,10 +550,10 @@ async fn test_set_artifacts_cached_url_partial_update(pool: sqlx::PgPool) {
     // Only update the first artifact (partial list).
     let resp = env
         .api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
-                updates: vec![rpc::forge::IpxeScriptArtifactUpdateRequest {
+                updates: vec![rpc::forge::IpxeTemplateArtifactUpdateRequest {
                     name: "kernel".to_string(),
                     cached_url: Some("http://cache.local/kernel".to_string()),
                 }],
@@ -594,28 +590,28 @@ async fn test_set_artifacts_cached_url_ordered_duplicate_names(pool: sqlx::PgPoo
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: None,
-                ipxe_template_name: Some("qcow-image".to_string()),
-                ipxe_parameters: vec![rpc::forge::IpxeScriptParameter {
+                ipxe_template_id: Some("ea756ddd-add3-5e42-a202-44bfc2d5aac2".parse().unwrap()),
+                ipxe_template_parameters: vec![rpc::forge::IpxeTemplateParameter {
                     name: "image_url".to_string(),
                     value: "http://example.com/image.qcow2".to_string(),
                 }],
-                ipxe_artifacts: vec![
-                    IpxeScriptArtifact {
+                ipxe_template_artifacts: vec![
+                    IpxeTemplateArtifact {
                         name: "kernel".to_string(),
                         url: "http://example.com/kernel-a".to_string(),
                         sha: None,
                         auth_type: None,
                         auth_token: None,
-                        cache_strategy: IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                        cache_strategy: IpxeTemplateArtifactCacheStrategy::CachedOnly as i32,
                         cached_url: None,
                     },
-                    IpxeScriptArtifact {
+                    IpxeTemplateArtifact {
                         name: "kernel".to_string(),
                         url: "http://example.com/kernel-b".to_string(),
                         sha: None,
                         auth_type: None,
                         auth_token: None,
-                        cache_strategy: IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                        cache_strategy: IpxeTemplateArtifactCacheStrategy::CachedOnly as i32,
                         cached_url: None,
                     },
                 ],
@@ -630,15 +626,15 @@ async fn test_set_artifacts_cached_url_ordered_duplicate_names(pool: sqlx::PgPoo
     // Two updates for "kernel" — each consumes the next unmatched occurrence.
     let resp = env
         .api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
                 updates: vec![
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "kernel".to_string(),
                         cached_url: Some("http://cache.local/kernel-a".to_string()),
                     },
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "kernel".to_string(),
                         cached_url: Some("http://cache.local/kernel-b".to_string()),
                     },
@@ -667,15 +663,15 @@ async fn test_set_artifacts_cached_url_too_many_same_name_fails(pool: sqlx::PgPo
 
     let resp = env
         .api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
                 updates: vec![
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "kernel".to_string(),
                         cached_url: Some("http://cache.local/kernel-1".to_string()),
                     },
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "kernel".to_string(), // no second kernel exists
                         cached_url: Some("http://cache.local/kernel-2".to_string()),
                     },
@@ -695,10 +691,10 @@ async fn test_set_artifacts_cached_url_unknown_name_fails(pool: sqlx::PgPool) {
 
     let resp = env
         .api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
-                updates: vec![rpc::forge::IpxeScriptArtifactUpdateRequest {
+                updates: vec![rpc::forge::IpxeTemplateArtifactUpdateRequest {
                     name: "does-not-exist".to_string(),
                     cached_url: Some("http://cache.local/whatever".to_string()),
                 }],
@@ -719,15 +715,15 @@ async fn test_set_artifacts_transitions_to_ready_when_all_cached_only_set(pool: 
     // CACHE_AS_NEEDED "overlay" artifact untouched.
     let _ = env
         .api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
                 updates: vec![
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "kernel".to_string(),
                         cached_url: Some("http://cache.local/kernel".to_string()),
                     },
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "initrd".to_string(),
                         cached_url: Some("http://cache.local/initrd".to_string()),
                     },
@@ -758,10 +754,10 @@ async fn test_set_artifacts_does_not_transition_to_ready_when_cached_only_incomp
     // Only set kernel; initrd (also CACHED_ONLY) is still missing.
     let _ = env
         .api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
-                updates: vec![rpc::forge::IpxeScriptArtifactUpdateRequest {
+                updates: vec![rpc::forge::IpxeTemplateArtifactUpdateRequest {
                     name: "kernel".to_string(),
                     cached_url: Some("http://cache.local/kernel".to_string()),
                 }],
@@ -787,10 +783,10 @@ async fn test_set_artifacts_cached_url_clear(pool: sqlx::PgPool) {
 
     // Set then clear kernel's cached_url.
     env.api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
-                updates: vec![rpc::forge::IpxeScriptArtifactUpdateRequest {
+                updates: vec![rpc::forge::IpxeTemplateArtifactUpdateRequest {
                     name: "kernel".to_string(),
                     cached_url: Some("http://cache.local/kernel".to_string()),
                 }],
@@ -801,10 +797,10 @@ async fn test_set_artifacts_cached_url_clear(pool: sqlx::PgPool) {
 
     let resp = env
         .api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
-                updates: vec![rpc::forge::IpxeScriptArtifactUpdateRequest {
+                updates: vec![rpc::forge::IpxeTemplateArtifactUpdateRequest {
                     name: "kernel".to_string(),
                     cached_url: None, // clear it
                 }],
@@ -824,15 +820,15 @@ async fn test_clear_cached_url_demotes_ready_to_provisioning(pool: sqlx::PgPool)
 
     // Set all CACHED_ONLY artifacts so the OS becomes READY.
     env.api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
                 updates: vec![
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "kernel".to_string(),
                         cached_url: Some("http://cache.local/kernel".to_string()),
                     },
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "initrd".to_string(),
                         cached_url: Some("http://cache.local/initrd".to_string()),
                     },
@@ -852,10 +848,10 @@ async fn test_clear_cached_url_demotes_ready_to_provisioning(pool: sqlx::PgPool)
 
     // Clear one CACHED_ONLY artifact's cached_url — status must revert.
     env.api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
-                updates: vec![rpc::forge::IpxeScriptArtifactUpdateRequest {
+                updates: vec![rpc::forge::IpxeTemplateArtifactUpdateRequest {
                     name: "kernel".to_string(),
                     cached_url: None,
                 }],
@@ -898,18 +894,18 @@ async fn test_create_strips_cached_url(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: None,
-                ipxe_template_name: Some("qcow-image".to_string()),
-                ipxe_parameters: vec![rpc::forge::IpxeScriptParameter {
+                ipxe_template_id: Some("ea756ddd-add3-5e42-a202-44bfc2d5aac2".parse().unwrap()),
+                ipxe_template_parameters: vec![rpc::forge::IpxeTemplateParameter {
                     name: "image_url".to_string(),
                     value: "http://example.com/image.qcow2".to_string(),
                 }],
-                ipxe_artifacts: vec![IpxeScriptArtifact {
+                ipxe_template_artifacts: vec![IpxeTemplateArtifact {
                     name: "kernel".to_string(),
                     url: "http://example.com/kernel".to_string(),
                     sha: None,
                     auth_type: None,
                     auth_token: None,
-                    cache_strategy: IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                    cache_strategy: IpxeTemplateArtifactCacheStrategy::CachedOnly as i32,
                     cached_url: Some("http://sneaky.local/kernel".to_string()),
                 }],
             },
@@ -921,8 +917,8 @@ async fn test_create_strips_cached_url(pool: sqlx::PgPool) {
     let os_id = resp.id.unwrap();
     let arts = env
         .api
-        .get_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::GetOperatingSystemCachableIpxeScriptArtifactsRequest { id: Some(os_id) },
+        .get_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::GetOperatingSystemCachableIpxeTemplateArtifactsRequest { id: Some(os_id) },
         ))
         .await
         .unwrap()
@@ -951,18 +947,18 @@ async fn test_create_with_cached_only_sets_provisioning(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: None,
-                ipxe_template_name: Some("qcow-image".to_string()),
-                ipxe_parameters: vec![rpc::forge::IpxeScriptParameter {
+                ipxe_template_id: Some("ea756ddd-add3-5e42-a202-44bfc2d5aac2".parse().unwrap()),
+                ipxe_template_parameters: vec![rpc::forge::IpxeTemplateParameter {
                     name: "image_url".to_string(),
                     value: "http://example.com/image.qcow2".to_string(),
                 }],
-                ipxe_artifacts: vec![IpxeScriptArtifact {
+                ipxe_template_artifacts: vec![IpxeTemplateArtifact {
                     name: "kernel".to_string(),
                     url: "http://example.com/kernel".to_string(),
                     sha: None,
                     auth_type: None,
                     auth_token: None,
-                    cache_strategy: IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                    cache_strategy: IpxeTemplateArtifactCacheStrategy::CachedOnly as i32,
                     cached_url: None,
                 }],
             },
@@ -985,15 +981,15 @@ async fn test_update_strips_cached_url_from_artifacts(pool: sqlx::PgPool) {
 
     // First, set cached_url via the proper RPC so we can verify update strips it.
     env.api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
                 updates: vec![
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "kernel".to_string(),
                         cached_url: Some("http://cache.local/kernel".to_string()),
                     },
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "initrd".to_string(),
                         cached_url: Some("http://cache.local/initrd".to_string()),
                     },
@@ -1015,31 +1011,31 @@ async fn test_update_strips_cached_url_from_artifacts(pool: sqlx::PgPool) {
                 phone_home_enabled: None,
                 user_data: None,
                 ipxe_script: None,
-                ipxe_template_name: None,
-                ipxe_parameters: None,
-                ipxe_artifacts: Some(IpxeScriptArtifacts {
+                ipxe_template_id: None,
+                ipxe_template_parameters: None,
+                ipxe_template_artifacts: Some(IpxeTemplateArtifacts {
                     items: vec![
-                        IpxeScriptArtifact {
+                        IpxeTemplateArtifact {
                             name: "kernel".to_string(),
                             url: "http://example.com/kernel".to_string(),
                             sha: None,
                             auth_type: None,
                             auth_token: None,
-                            cache_strategy: IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                            cache_strategy: IpxeTemplateArtifactCacheStrategy::CachedOnly as i32,
                             cached_url: Some("http://sneaky.local/kernel".to_string()),
                         },
-                        IpxeScriptArtifact {
+                        IpxeTemplateArtifact {
                             name: "initrd".to_string(),
                             url: "http://example.com/initrd".to_string(),
                             sha: None,
                             auth_type: None,
                             auth_token: None,
-                            cache_strategy: IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                            cache_strategy: IpxeTemplateArtifactCacheStrategy::CachedOnly as i32,
                             cached_url: Some("http://sneaky.local/initrd".to_string()),
                         },
                     ],
                 }),
-                ipxe_definition_hash: None,
+                ipxe_template_definition_hash: None,
             },
         ))
         .await
@@ -1047,8 +1043,8 @@ async fn test_update_strips_cached_url_from_artifacts(pool: sqlx::PgPool) {
 
     let arts = env
         .api
-        .get_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::GetOperatingSystemCachableIpxeScriptArtifactsRequest { id: Some(os_id) },
+        .get_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::GetOperatingSystemCachableIpxeTemplateArtifactsRequest { id: Some(os_id) },
         ))
         .await
         .unwrap()
@@ -1070,15 +1066,15 @@ async fn test_update_with_cached_only_artifacts_recomputes_status(pool: sqlx::Pg
 
     // Set all cached_urls so OS becomes READY.
     env.api
-        .update_operating_system_cachable_ipxe_script_artifacts(tonic::Request::new(
-            rpc::forge::UpdateOperatingSystemIpxeScriptArtifactRequest {
+        .update_operating_system_cachable_ipxe_template_artifacts(tonic::Request::new(
+            rpc::forge::UpdateOperatingSystemIpxeTemplateArtifactRequest {
                 id: Some(os_id),
                 updates: vec![
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "kernel".to_string(),
                         cached_url: Some("http://cache.local/kernel".to_string()),
                     },
-                    rpc::forge::IpxeScriptArtifactUpdateRequest {
+                    rpc::forge::IpxeTemplateArtifactUpdateRequest {
                         name: "initrd".to_string(),
                         cached_url: Some("http://cache.local/initrd".to_string()),
                     },
@@ -1109,31 +1105,31 @@ async fn test_update_with_cached_only_artifacts_recomputes_status(pool: sqlx::Pg
                 phone_home_enabled: None,
                 user_data: None,
                 ipxe_script: None,
-                ipxe_template_name: None,
-                ipxe_parameters: None,
-                ipxe_artifacts: Some(IpxeScriptArtifacts {
+                ipxe_template_id: None,
+                ipxe_template_parameters: None,
+                ipxe_template_artifacts: Some(IpxeTemplateArtifacts {
                     items: vec![
-                        IpxeScriptArtifact {
+                        IpxeTemplateArtifact {
                             name: "kernel".to_string(),
                             url: "http://example.com/kernel".to_string(),
                             sha: None,
                             auth_type: None,
                             auth_token: None,
-                            cache_strategy: IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                            cache_strategy: IpxeTemplateArtifactCacheStrategy::CachedOnly as i32,
                             cached_url: None,
                         },
-                        IpxeScriptArtifact {
+                        IpxeTemplateArtifact {
                             name: "initrd".to_string(),
                             url: "http://example.com/initrd".to_string(),
                             sha: None,
                             auth_type: None,
                             auth_token: None,
-                            cache_strategy: IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                            cache_strategy: IpxeTemplateArtifactCacheStrategy::CachedOnly as i32,
                             cached_url: None,
                         },
                     ],
                 }),
-                ipxe_definition_hash: None,
+                ipxe_template_definition_hash: None,
             },
         ))
         .await
@@ -1157,17 +1153,15 @@ async fn test_update_with_cached_only_artifacts_recomputes_status(pool: sqlx::Pg
 // ---------------------------------------------------------------------------
 
 #[crate::sqlx_test]
-async fn test_get_ipxe_script_template_not_found(pool: sqlx::PgPool) {
+async fn test_get_ipxe_template_not_found(pool: sqlx::PgPool) {
     let env = create_test_env(pool).await;
 
     let nonexistent_id = carbide_uuid::ipxe_template::IpxeTemplateId::nil();
     let resp = env
         .api
-        .get_ipxe_script_template(tonic::Request::new(
-            rpc::forge::GetIpxeScriptTemplateRequest {
-                id: Some(nonexistent_id),
-            },
-        ))
+        .get_ipxe_template(tonic::Request::new(rpc::forge::GetIpxeTemplateRequest {
+            id: Some(nonexistent_id),
+        }))
         .await;
 
     assert!(resp.is_err());
@@ -1194,9 +1188,9 @@ async fn test_create_operating_system_with_explicit_id(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: Some("chain http://example.com".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await
@@ -1223,9 +1217,9 @@ async fn test_deleted_os_not_returned_by_find_ids(pool: sqlx::PgPool) {
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: Some("chain http://example.com".to_string()),
-                ipxe_template_name: None,
-                ipxe_parameters: vec![],
-                ipxe_artifacts: vec![],
+                ipxe_template_id: None,
+                ipxe_template_parameters: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await

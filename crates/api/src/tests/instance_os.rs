@@ -20,7 +20,7 @@ use common::api_fixtures::instance::{default_tenant_config, single_interface_net
 use common::api_fixtures::{create_managed_host, create_test_env};
 use config_version::ConfigVersion;
 use rpc::forge::forge_server::Forge;
-use rpc::forge::{IpxeScriptArtifact, IpxeScriptParameter};
+use rpc::forge::{IpxeTemplateArtifact, IpxeTemplateParameter};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 
 use crate::tests::common;
@@ -221,12 +221,12 @@ async fn test_create_instance_with_ipxe_template_os(_: PgPoolOptions, options: P
                 phone_home_enabled: false,
                 user_data: Some("os-level-userdata".to_string()),
                 ipxe_script: None,
-                ipxe_template_name: Some("raw-ipxe".to_string()),
-                ipxe_parameters: vec![rpc::forge::IpxeScriptParameter {
+                ipxe_template_id: Some("ddbf83c0-a753-5fde-96c1-6b74e9c9db10".parse().unwrap()),
+                ipxe_template_parameters: vec![rpc::forge::IpxeTemplateParameter {
                     name: "ipxe".to_string(),
                     value: "chain http://boot.example.com".to_string(),
                 }],
-                ipxe_artifacts: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await
@@ -307,12 +307,12 @@ async fn create_os_definition(
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: None,
-                ipxe_template_name: Some("raw-ipxe".to_string()),
-                ipxe_parameters: vec![IpxeScriptParameter {
+                ipxe_template_id: Some("ddbf83c0-a753-5fde-96c1-6b74e9c9db10".parse().unwrap()),
+                ipxe_template_parameters: vec![IpxeTemplateParameter {
                     name: "ipxe".to_string(),
                     value: "chain http://boot.example.com".to_string(),
                 }],
-                ipxe_artifacts: vec![],
+                ipxe_template_artifacts: vec![],
             },
         ))
         .await
@@ -392,18 +392,19 @@ async fn test_allocate_instance_rejects_not_ready_os(_: PgPoolOptions, options: 
                 phone_home_enabled: false,
                 user_data: None,
                 ipxe_script: None,
-                ipxe_template_name: Some("raw-ipxe".to_string()),
-                ipxe_parameters: vec![IpxeScriptParameter {
+                ipxe_template_id: Some("ddbf83c0-a753-5fde-96c1-6b74e9c9db10".parse().unwrap()),
+                ipxe_template_parameters: vec![IpxeTemplateParameter {
                     name: "ipxe".to_string(),
                     value: "chain http://boot.example.com".to_string(),
                 }],
-                ipxe_artifacts: vec![IpxeScriptArtifact {
+                ipxe_template_artifacts: vec![IpxeTemplateArtifact {
                     name: "kernel".to_string(),
                     url: "https://example.com/kernel".to_string(),
                     sha: None,
                     auth_type: None,
                     auth_token: None,
-                    cache_strategy: rpc::forge::IpxeScriptArtifactCacheStrategy::CachedOnly as i32,
+                    cache_strategy: rpc::forge::IpxeTemplateArtifactCacheStrategy::CachedOnly
+                        as i32,
                     cached_url: None,
                 }],
             },

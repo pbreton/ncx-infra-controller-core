@@ -24,10 +24,10 @@
 <textarea disabled rows="20" cols="100" style="width:100%;font-family:monospace;">{{ ipxe_script }}</textarea>
 {% endif %}
 
-{% if !template_name.is_empty() %}
+{% if !template_id.is_empty() %}
 <h2>iPXE Template</h2>
 <table class="detailsview">
-	<tr><th>Template</th><td><a href="/admin/ipxe-template/{{ template_name }}">{{ template_name }}</a></td></tr>
+	<tr><th>Template ID</th><td><a href="/admin/ipxe-template/{{ template_id }}">{{ template_id }}</a></td></tr>
 	<tr><th>Definition Hash</th><td>{{ definition_hash }}</td></tr>
 </table>
 

@@ -22,9 +22,9 @@ use super::args::Args;
 use crate::rpc::ApiClient;
 
 fn scope_display(scope: i32) -> &'static str {
-    match rpc::forge::IpxeScriptTemplateScope::try_from(scope) {
-        Ok(rpc::forge::IpxeScriptTemplateScope::Internal) => "internal",
-        Ok(rpc::forge::IpxeScriptTemplateScope::Public) => "public",
+    match rpc::forge::IpxeTemplateScope::try_from(scope) {
+        Ok(rpc::forge::IpxeTemplateScope::Internal) => "internal",
+        Ok(rpc::forge::IpxeTemplateScope::Public) => "public",
         _ => "unknown",
     }
 }
@@ -42,7 +42,7 @@ pub async fn handle_show(
 }
 
 async fn list_all(format: OutputFormat, api_client: &ApiClient) -> Result<(), CarbideCliError> {
-    let result = api_client.0.list_ipxe_script_templates().await?;
+    let result = api_client.0.list_ipxe_templates().await?;
 
     if format == OutputFormat::Json {
         println!("{}", serde_json::to_string_pretty(&result.templates)?);
@@ -92,7 +92,7 @@ async fn show_one(
 
     let result = match api_client
         .0
-        .get_ipxe_script_template(rpc::forge::GetIpxeScriptTemplateRequest { id: Some(id) })
+        .get_ipxe_template(rpc::forge::GetIpxeTemplateRequest { id: Some(id) })
         .await
     {
         Ok(tmpl) => tmpl,

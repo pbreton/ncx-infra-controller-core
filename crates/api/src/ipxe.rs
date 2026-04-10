@@ -16,8 +16,8 @@
  */
 use ::rpc::forge as rpc;
 use carbide_ipxe_renderer::{
-    DefaultIpxeScriptRenderer, IpxeScriptArtifact, IpxeScriptArtifactCacheStrategy,
-    IpxeScriptParameter, IpxeScriptRenderer, IpxeTemplatedScript,
+    DefaultIpxeScriptRenderer, IpxeScript, IpxeScriptRenderer, IpxeTemplateArtifact,
+    IpxeTemplateArtifactCacheStrategy, IpxeTemplateParameter,
 };
 use carbide_uuid::machine::{MachineId, MachineInterfaceId, MachineType};
 use db::{self};
@@ -32,10 +32,10 @@ use sqlx::PgConnection;
 
 use crate::CarbideError;
 
-/// Converts an operating_systems row (type ipxe_os_definition) to IpxeTemplatedScript for the renderer.
-fn operating_system_row_to_ipxe_templated_script(
+/// Converts an operating_systems row (type ipxe_os_definition) to IpxeScript for the renderer.
+fn operating_system_row_to_ipxe_script(
     row: &db::operating_system::OperatingSystem,
-) -> Result<IpxeTemplatedScript, CarbideError> {
+) -> Result<IpxeScript, CarbideError> {
     if row.type_ != model::operating_system_definition::OS_TYPE_TEMPLATED_IPXE {
         return Err(CarbideError::internal(format!(
             "operating_system {} has type {}, expected {}",
@@ -44,8 +44,8 @@ fn operating_system_row_to_ipxe_templated_script(
             model::operating_system_definition::OS_TYPE_TEMPLATED_IPXE,
         )));
     }
-    let ipxe_template_name = row.ipxe_template_name.clone().unwrap_or_default();
-    let parameters: Vec<IpxeScriptParameter> = row
+    let ipxe_template_id = row.ipxe_template_id.clone().unwrap_or_default();
+    let parameters: Vec<IpxeTemplateParameter> = row
         .ipxe_parameters
         .as_ref()
         .and_then(|j| {
@@ -53,7 +53,7 @@ fn operating_system_row_to_ipxe_templated_script(
                 arr.iter()
                     .filter_map(|v| {
                         let obj = v.as_object()?;
-                        Some(IpxeScriptParameter {
+                        Some(IpxeTemplateParameter {
                             name: obj.get("name")?.as_str()?.to_string(),
                             value: obj.get("value")?.as_str().unwrap_or("").to_string(),
                         })
@@ -62,7 +62,7 @@ fn operating_system_row_to_ipxe_templated_script(
             })
         })
         .unwrap_or_default();
-    let artifacts: Vec<IpxeScriptArtifact> = row
+    let artifacts: Vec<IpxeTemplateArtifact> = row
         .ipxe_artifacts
         .as_ref()
         .and_then(|j| {
@@ -75,12 +75,12 @@ fn operating_system_row_to_ipxe_templated_script(
                             .and_then(|v| v.as_i64())
                             .unwrap_or(0)
                         {
-                            1 => IpxeScriptArtifactCacheStrategy::LocalOnly,
-                            2 => IpxeScriptArtifactCacheStrategy::CachedOnly,
-                            3 => IpxeScriptArtifactCacheStrategy::RemoteOnly,
-                            _ => IpxeScriptArtifactCacheStrategy::CacheAsNeeded,
+                            1 => IpxeTemplateArtifactCacheStrategy::LocalOnly,
+                            2 => IpxeTemplateArtifactCacheStrategy::CachedOnly,
+                            3 => IpxeTemplateArtifactCacheStrategy::RemoteOnly,
+                            _ => IpxeTemplateArtifactCacheStrategy::CacheAsNeeded,
                         };
-                        Some(IpxeScriptArtifact {
+                        Some(IpxeTemplateArtifact {
                             name: obj.get("name")?.as_str()?.to_string(),
                             url: obj.get("url")?.as_str().unwrap_or("").to_string(),
                             sha: obj.get("sha").and_then(|v| v.as_str()).map(String::from),
@@ -103,12 +103,12 @@ fn operating_system_row_to_ipxe_templated_script(
             })
         })
         .unwrap_or_default();
-    Ok(IpxeTemplatedScript {
+    Ok(IpxeScript {
         name: row.name.clone(),
         description: row.description.clone(),
         hash: row.ipxe_definition_hash.clone().unwrap_or_default(),
         tenant_id: Some(row.org.clone()),
-        ipxe_template_name,
+        ipxe_template_id,
         parameters,
         artifacts,
     })
@@ -189,9 +189,9 @@ impl PxeInstructions {
         }.serialize_pxe_instructions()
     }
 
-    /// Render an IpxeTemplatedScript definition using the template-based renderer
-    fn render_ipxe_templated_script(
-        ipxeos: &IpxeTemplatedScript,
+    /// Render an IpxeScript definition using the template-based renderer
+    fn render_ipxe_script(
+        ipxeos: &IpxeScript,
         base_url: &str,
         console: &str,
     ) -> Result<String, CarbideError> {
@@ -199,13 +199,13 @@ impl PxeInstructions {
 
         let mut reserved_params = Vec::new();
 
-        if let Some(template) = renderer.get_template_by_name(&ipxeos.ipxe_template_name) {
+        if let Some(template) = renderer.get_template_by_id(&ipxeos.ipxe_template_id) {
             if template
                 .reserved_params
                 .iter()
                 .any(|p| p.to_lowercase() == "base_url")
             {
-                reserved_params.push(IpxeScriptParameter {
+                reserved_params.push(IpxeTemplateParameter {
                     name: "base_url".to_string(),
                     value: base_url.to_string(),
                 });
@@ -216,7 +216,7 @@ impl PxeInstructions {
                 .iter()
                 .any(|p| p.to_lowercase() == "console")
             {
-                reserved_params.push(IpxeScriptParameter {
+                reserved_params.push(IpxeTemplateParameter {
                     name: "console".to_string(),
                     value: console.to_string(),
                 });
@@ -507,13 +507,8 @@ exit ||
                                 if row.type_
                                     == model::operating_system_definition::OS_TYPE_TEMPLATED_IPXE
                                 {
-                                    let ipxeos =
-                                        operating_system_row_to_ipxe_templated_script(&row)?;
-                                    Self::render_ipxe_templated_script(
-                                        &ipxeos,
-                                        "${base-url}",
-                                        console,
-                                    )?
+                                    let ipxeos = operating_system_row_to_ipxe_script(&row)?;
+                                    Self::render_ipxe_script(&ipxeos, "${base-url}", console)?
                                 } else {
                                     row.ipxe_script.unwrap_or_default()
                                 }

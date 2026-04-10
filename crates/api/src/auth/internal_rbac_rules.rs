@@ -401,15 +401,15 @@ impl InternalRBACRules {
         x.perm("FindOperatingSystemIds", vec![ForgeAdminCLI, SiteAgent]);
         x.perm("FindOperatingSystemsByIds", vec![ForgeAdminCLI, SiteAgent]);
         x.perm(
-            "GetOperatingSystemCachableIpxeScriptArtifacts",
+            "GetOperatingSystemCachableIpxeTemplateArtifacts",
             vec![ForgeAdminCLI],
         );
         x.perm(
-            "UpdateOperatingSystemCachableIpxeScriptArtifacts",
+            "UpdateOperatingSystemCachableIpxeTemplateArtifacts",
             vec![ForgeAdminCLI],
         );
-        x.perm("GetIpxeScriptTemplate", vec![ForgeAdminCLI, SiteAgent]);
-        x.perm("ListIpxeScriptTemplates", vec![ForgeAdminCLI, SiteAgent]);
+        x.perm("GetIpxeTemplate", vec![ForgeAdminCLI, SiteAgent]);
+        x.perm("ListIpxeTemplates", vec![ForgeAdminCLI, SiteAgent]);
         x.perm("CreateRackFirmware", vec![ForgeAdminCLI]);
         x.perm("DeleteRackFirmware", vec![ForgeAdminCLI]);
         x.perm("FindRackStateHistories", vec![ForgeAdminCLI, Machineatron]);

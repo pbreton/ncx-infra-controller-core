@@ -27,19 +27,19 @@ This crate provides a flexible, template-based approach to generating iPXE boot 
 
 ```rust
 use carbide_ipxe_renderer::{
-    IpxeScriptRenderer, DefaultIpxeScriptRenderer, IpxeTemplatedScript, IpxeScriptParameter
+    IpxeScriptRenderer, DefaultIpxeScriptRenderer, IpxeScript, IpxeTemplateParameter
 };
 
 // Create renderer
 let renderer = DefaultIpxeScriptRenderer::new();
 
 // Define an iPXE OS
-let mut ipxeos = IpxeTemplatedScript {
+let mut ipxeos = IpxeScript {
     id: "test-os".to_string(),
     name: "Ubuntu 22.04".to_string(),
-    ipxe_template_name: "qcow-image".to_string(),
+    ipxe_template_id: "ea756ddd-add3-5e42-a202-44bfc2d5aac2".to_string(),
     parameters: vec![
-        IpxeScriptParameter {
+        IpxeTemplateParameter {
             name: "image_url".to_string(),
             value: "http://example.com/ubuntu.qcow2".to_string(),
         },
@@ -52,11 +52,11 @@ ipxeos.hash = renderer.hash(&ipxeos);
 
 // Render iPXE script
 let reserved_params = vec![
-    IpxeScriptParameter {
+    IpxeTemplateParameter {
         name: "base_url".to_string(),
         value: "http://pxe.local".to_string(),
     },
-    IpxeScriptParameter {
+    IpxeTemplateParameter {
         name: "console".to_string(),
         value: "ttyS0,115200".to_string(),
     },
@@ -101,11 +101,11 @@ Templates support three types of parameters:
 Artifacts represent downloadable components (kernels, initrds, images, ...):
 
 ```rust
-IpxeScriptArtifact {
+IpxeTemplateArtifact {
     name: "kernel".to_string(),
     url: "http://example.com/vmlinuz".to_string(),
     sha: Some("sha256:abc123...".to_string()),
-    cache_strategy: IpxeScriptArtifactCacheStrategy::CacheAsNeeded,
+    cache_strategy: IpxeTemplateArtifactCacheStrategy::CacheAsNeeded,
     cached_url: Some("http://pxe.local/artifacts/kernel-abc123".to_string()),
 }
 ```

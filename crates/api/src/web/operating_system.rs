@@ -28,7 +28,7 @@ use rpc::forge::forge_server::Forge;
 use crate::api::Api;
 
 fn sanitize_os(os: &mut forgerpc::OperatingSystemDefinition) {
-    for artifact in &mut os.ipxe_artifacts {
+    for artifact in &mut os.ipxe_template_artifacts {
         artifact.auth_token = None;
     }
 }
@@ -45,7 +45,7 @@ struct OsRowDisplay {
     os_type: String,
     status: String,
     tenant_organization_id: String,
-    template_name: String,
+    template_id: String,
     is_active: bool,
 }
 
@@ -63,7 +63,10 @@ impl From<&forgerpc::OperatingSystemDefinition> for OsRowDisplay {
             os_type,
             status,
             tenant_organization_id: os.tenant_organization_id.clone(),
-            template_name: os.ipxe_template_name.clone().unwrap_or_default(),
+            template_id: os
+                .ipxe_template_id
+                .map(|id| id.to_string())
+                .unwrap_or_default(),
             is_active: os.is_active,
         }
     }
@@ -146,7 +149,7 @@ struct OsDetail {
     created: String,
     updated: String,
     ipxe_script: String,
-    template_name: String,
+    template_id: String,
     definition_hash: String,
     parameters: Vec<OsParameter>,
     artifacts: Vec<OsArtifact>,
@@ -175,7 +178,7 @@ impl From<forgerpc::OperatingSystemDefinition> for OsDetail {
             .unwrap_or_else(|_| "Unknown".to_string());
 
         let parameters = os
-            .ipxe_parameters
+            .ipxe_template_parameters
             .iter()
             .map(|p| OsParameter {
                 name: p.name.clone(),
@@ -184,11 +187,11 @@ impl From<forgerpc::OperatingSystemDefinition> for OsDetail {
             .collect();
 
         let artifacts = os
-            .ipxe_artifacts
+            .ipxe_template_artifacts
             .iter()
             .map(|a| {
                 let cache_strategy =
-                    forgerpc::IpxeScriptArtifactCacheStrategy::try_from(a.cache_strategy)
+                    forgerpc::IpxeTemplateArtifactCacheStrategy::try_from(a.cache_strategy)
                         .map(|s| format!("{s:?}"))
                         .unwrap_or_else(|_| "Unknown".to_string());
                 OsArtifact {
@@ -214,8 +217,11 @@ impl From<forgerpc::OperatingSystemDefinition> for OsDetail {
             created: os.created,
             updated: os.updated,
             ipxe_script: os.ipxe_script.unwrap_or_default(),
-            template_name: os.ipxe_template_name.unwrap_or_default(),
-            definition_hash: os.ipxe_definition_hash.unwrap_or_default(),
+            template_id: os
+                .ipxe_template_id
+                .map(|id| id.to_string())
+                .unwrap_or_default(),
+            definition_hash: os.ipxe_template_definition_hash.unwrap_or_default(),
             parameters,
             artifacts,
         }

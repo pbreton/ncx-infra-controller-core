@@ -23,8 +23,9 @@
 
 use ::rpc::forge::{self as forgerpc};
 use carbide_ipxe_renderer::{
-    IpxeScriptArtifact, IpxeScriptArtifactCacheStrategy, IpxeScriptParameter,
+    IpxeTemplateArtifact, IpxeTemplateArtifactCacheStrategy, IpxeTemplateParameter,
 };
+use carbide_uuid::ipxe_template::IpxeTemplateId;
 use carbide_uuid::operating_system::OperatingSystemId;
 
 /// Database value for the raw inline iPXE script OS type.
@@ -51,10 +52,10 @@ pub struct OperatingSystemDefinition {
     pub created: String,
     pub updated: String,
     pub ipxe_script: Option<String>,
-    pub ipxe_template_name: Option<String>,
-    pub ipxe_parameters: Vec<IpxeScriptParameter>,
-    pub ipxe_artifacts: Vec<IpxeScriptArtifact>,
-    pub ipxe_definition_hash: Option<String>,
+    pub ipxe_template_id: Option<String>,
+    pub ipxe_template_parameters: Vec<IpxeTemplateParameter>,
+    pub ipxe_template_artifacts: Vec<IpxeTemplateArtifact>,
+    pub ipxe_template_definition_hash: Option<String>,
 }
 
 impl From<OperatingSystemDefinition> for forgerpc::OperatingSystemDefinition {
@@ -82,34 +83,37 @@ impl From<OperatingSystemDefinition> for forgerpc::OperatingSystemDefinition {
             created: m.created,
             updated: m.updated,
             ipxe_script: m.ipxe_script,
-            ipxe_template_name: m.ipxe_template_name,
-            ipxe_parameters: m
-                .ipxe_parameters
+            ipxe_template_id: m.ipxe_template_id.map(|id| {
+                id.parse::<IpxeTemplateId>()
+                    .expect("ipxe_template_id from model must be a valid UUID")
+            }),
+            ipxe_template_parameters: m
+                .ipxe_template_parameters
                 .into_iter()
-                .map(|p| forgerpc::IpxeScriptParameter {
+                .map(|p| forgerpc::IpxeTemplateParameter {
                     name: p.name,
                     value: p.value,
                 })
                 .collect(),
-            ipxe_artifacts: m
-                .ipxe_artifacts
+            ipxe_template_artifacts: m
+                .ipxe_template_artifacts
                 .into_iter()
-                .map(|a| forgerpc::IpxeScriptArtifact {
+                .map(|a| forgerpc::IpxeTemplateArtifact {
                     name: a.name,
                     url: a.url,
                     sha: a.sha,
                     auth_type: a.auth_type,
                     auth_token: a.auth_token,
                     cache_strategy: match a.cache_strategy {
-                        IpxeScriptArtifactCacheStrategy::CacheAsNeeded => 0,
-                        IpxeScriptArtifactCacheStrategy::LocalOnly => 1,
-                        IpxeScriptArtifactCacheStrategy::CachedOnly => 2,
-                        IpxeScriptArtifactCacheStrategy::RemoteOnly => 3,
+                        IpxeTemplateArtifactCacheStrategy::CacheAsNeeded => 0,
+                        IpxeTemplateArtifactCacheStrategy::LocalOnly => 1,
+                        IpxeTemplateArtifactCacheStrategy::CachedOnly => 2,
+                        IpxeTemplateArtifactCacheStrategy::RemoteOnly => 3,
                     },
                     cached_url: a.cached_url,
                 })
                 .collect(),
-            ipxe_definition_hash: m.ipxe_definition_hash,
+            ipxe_template_definition_hash: m.ipxe_template_definition_hash,
         }
     }
 }

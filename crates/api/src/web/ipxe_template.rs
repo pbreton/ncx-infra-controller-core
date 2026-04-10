@@ -42,9 +42,9 @@ struct IpxeTemplateRowDisplay {
     required_artifacts_count: usize,
 }
 
-impl From<&forgerpc::IpxeScriptTemplate> for IpxeTemplateRowDisplay {
-    fn from(tmpl: &forgerpc::IpxeScriptTemplate) -> Self {
-        let scope = forgerpc::IpxeScriptTemplateScope::try_from(tmpl.scope)
+impl From<&forgerpc::IpxeTemplate> for IpxeTemplateRowDisplay {
+    fn from(tmpl: &forgerpc::IpxeTemplate) -> Self {
+        let scope = forgerpc::IpxeTemplateScope::try_from(tmpl.scope)
             .map(|s| format!("{s:?}"))
             .unwrap_or_else(|_| "Unknown".to_string());
         Self {
@@ -62,7 +62,7 @@ pub async fn show_html(AxumState(state): AxumState<Arc<Api>>) -> Response {
     let templates = match fetch_templates(state).await {
         Ok(t) => t,
         Err(err) => {
-            tracing::error!(%err, "list_ipxe_script_templates");
+            tracing::error!(%err, "list_ipxe_templates");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Error loading iPXE templates",
@@ -81,7 +81,7 @@ pub async fn show_all_json(AxumState(state): AxumState<Arc<Api>>) -> Response {
     let templates = match fetch_templates(state).await {
         Ok(t) => t,
         Err(err) => {
-            tracing::error!(%err, "list_ipxe_script_templates");
+            tracing::error!(%err, "list_ipxe_templates");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Error loading iPXE templates",
@@ -92,11 +92,9 @@ pub async fn show_all_json(AxumState(state): AxumState<Arc<Api>>) -> Response {
     (StatusCode::OK, Json(templates)).into_response()
 }
 
-async fn fetch_templates(
-    api: Arc<Api>,
-) -> Result<Vec<forgerpc::IpxeScriptTemplate>, tonic::Status> {
-    let request = tonic::Request::new(forgerpc::ListIpxeScriptTemplatesRequest {});
-    let response = api.list_ipxe_script_templates(request).await?;
+async fn fetch_templates(api: Arc<Api>) -> Result<Vec<forgerpc::IpxeTemplate>, tonic::Status> {
+    let request = tonic::Request::new(forgerpc::ListIpxeTemplatesRequest {});
+    let response = api.list_ipxe_templates(request).await?;
     let mut templates = response.into_inner().templates;
     templates.sort_unstable_by(|a, b| a.name.cmp(&b.name));
     Ok(templates)
@@ -114,9 +112,9 @@ struct IpxeTemplateDetail {
     template_text: String,
 }
 
-impl From<forgerpc::IpxeScriptTemplate> for IpxeTemplateDetail {
-    fn from(tmpl: forgerpc::IpxeScriptTemplate) -> Self {
-        let scope = forgerpc::IpxeScriptTemplateScope::try_from(tmpl.scope)
+impl From<forgerpc::IpxeTemplate> for IpxeTemplateDetail {
+    fn from(tmpl: forgerpc::IpxeTemplate) -> Self {
+        let scope = forgerpc::IpxeTemplateScope::try_from(tmpl.scope)
             .map(|s| format!("{s:?}"))
             .unwrap_or_else(|_| "Unknown".to_string());
         Self {
@@ -145,15 +143,15 @@ pub async fn detail(
         Err(_) => return super::not_found_response(id_str),
     };
 
-    let request = tonic::Request::new(forgerpc::GetIpxeScriptTemplateRequest { id: Some(id) });
+    let request = tonic::Request::new(forgerpc::GetIpxeTemplateRequest { id: Some(id) });
 
-    let tmpl = match state.get_ipxe_script_template(request).await {
+    let tmpl = match state.get_ipxe_template(request).await {
         Ok(resp) => resp.into_inner(),
         Err(err) if err.code() == tonic::Code::NotFound => {
             return super::not_found_response(id_str);
         }
         Err(err) => {
-            tracing::error!(%err, "get_ipxe_script_template");
+            tracing::error!(%err, "get_ipxe_template");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Error loading iPXE template",

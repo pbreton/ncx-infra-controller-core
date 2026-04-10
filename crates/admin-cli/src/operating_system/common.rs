@@ -17,7 +17,7 @@
 
 use ::rpc::admin_cli::{CarbideCliError, CarbideCliResult};
 use ::rpc::forge::{
-    self as forgerpc, IpxeScriptArtifact, IpxeScriptParameter, OperatingSystemDefinition,
+    self as forgerpc, IpxeTemplateArtifact, IpxeTemplateParameter, OperatingSystemDefinition,
 };
 use serde::Serialize;
 
@@ -30,12 +30,21 @@ pub fn str_to_os_id(
     Ok(id)
 }
 
-/// Parse a "key=value" string into an `IpxeScriptParameter`.
-pub fn parse_param(s: &str) -> Result<IpxeScriptParameter, String> {
+pub fn str_to_ipxe_template_id(
+    id: &str,
+) -> CarbideCliResult<::carbide_uuid::ipxe_template::IpxeTemplateId> {
+    let id = uuid::Uuid::parse_str(id)
+        .map_err(|e| CarbideCliError::GenericError(e.to_string()))?
+        .into();
+    Ok(id)
+}
+
+/// Parse a "key=value" string into an `IpxeTemplateParameter`.
+pub fn parse_param(s: &str) -> Result<IpxeTemplateParameter, String> {
     let (name, value) = s
         .split_once('=')
         .ok_or_else(|| format!("expected KEY=VALUE, got '{s}'"))?;
-    Ok(IpxeScriptParameter {
+    Ok(IpxeTemplateParameter {
         name: name.to_string(),
         value: value.to_string(),
     })
@@ -58,10 +67,10 @@ pub struct SerializableOs {
     pub created: String,
     pub updated: String,
     pub ipxe_script: Option<String>,
-    pub ipxe_template_name: Option<String>,
-    pub ipxe_parameters: Vec<SerializableParam>,
-    pub ipxe_artifacts: Vec<SerializableArtifact>,
-    pub ipxe_definition_hash: Option<String>,
+    pub ipxe_template_id: Option<String>,
+    pub ipxe_template_parameters: Vec<SerializableParam>,
+    pub ipxe_template_artifacts: Vec<SerializableArtifact>,
+    pub ipxe_template_definition_hash: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -80,8 +89,8 @@ pub struct SerializableArtifact {
     pub cached_url: Option<String>,
 }
 
-impl From<IpxeScriptParameter> for SerializableParam {
-    fn from(p: IpxeScriptParameter) -> Self {
+impl From<IpxeTemplateParameter> for SerializableParam {
+    fn from(p: IpxeTemplateParameter) -> Self {
         Self {
             name: p.name,
             value: p.value,
@@ -89,14 +98,14 @@ impl From<IpxeScriptParameter> for SerializableParam {
     }
 }
 
-impl From<IpxeScriptArtifact> for SerializableArtifact {
-    fn from(a: IpxeScriptArtifact) -> Self {
-        use ::rpc::forge::IpxeScriptArtifactCacheStrategy;
-        let cache_strategy = match IpxeScriptArtifactCacheStrategy::try_from(a.cache_strategy) {
-            Ok(IpxeScriptArtifactCacheStrategy::CacheAsNeeded) => "cache_as_needed",
-            Ok(IpxeScriptArtifactCacheStrategy::LocalOnly) => "local_only",
-            Ok(IpxeScriptArtifactCacheStrategy::CachedOnly) => "cached_only",
-            Ok(IpxeScriptArtifactCacheStrategy::RemoteOnly) => "remote_only",
+impl From<IpxeTemplateArtifact> for SerializableArtifact {
+    fn from(a: IpxeTemplateArtifact) -> Self {
+        use ::rpc::forge::IpxeTemplateArtifactCacheStrategy;
+        let cache_strategy = match IpxeTemplateArtifactCacheStrategy::try_from(a.cache_strategy) {
+            Ok(IpxeTemplateArtifactCacheStrategy::CacheAsNeeded) => "cache_as_needed",
+            Ok(IpxeTemplateArtifactCacheStrategy::LocalOnly) => "local_only",
+            Ok(IpxeTemplateArtifactCacheStrategy::CachedOnly) => "cached_only",
+            Ok(IpxeTemplateArtifactCacheStrategy::RemoteOnly) => "remote_only",
             _ => "cache_as_needed",
         };
         Self {
@@ -130,10 +139,18 @@ impl From<OperatingSystemDefinition> for SerializableOs {
             created: os.created,
             updated: os.updated,
             ipxe_script: os.ipxe_script,
-            ipxe_template_name: os.ipxe_template_name,
-            ipxe_parameters: os.ipxe_parameters.into_iter().map(Into::into).collect(),
-            ipxe_artifacts: os.ipxe_artifacts.into_iter().map(Into::into).collect(),
-            ipxe_definition_hash: os.ipxe_definition_hash,
+            ipxe_template_id: os.ipxe_template_id.map(|id| id.to_string()),
+            ipxe_template_parameters: os
+                .ipxe_template_parameters
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+            ipxe_template_artifacts: os
+                .ipxe_template_artifacts
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+            ipxe_template_definition_hash: os.ipxe_template_definition_hash,
         }
     }
 }

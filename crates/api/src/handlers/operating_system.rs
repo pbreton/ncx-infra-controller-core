@@ -23,28 +23,28 @@ use crate::api::{Api, rpc};
 
 /// Validates template requirements and returns the computed definition hash on success.
 fn validate_template_requirements(
-    template_name: &str,
-    params: &[rpc::IpxeScriptParameter],
-    artifacts: &[rpc::IpxeScriptArtifact],
+    template_id: &str,
+    params: &[rpc::IpxeTemplateParameter],
+    artifacts: &[rpc::IpxeTemplateArtifact],
 ) -> Result<String, Status> {
     use carbide_ipxe_renderer::IpxeScriptRenderer;
 
     for (i, p) in params.iter().enumerate() {
         if p.name.trim().is_empty() {
             return Err(Status::invalid_argument(format!(
-                "ipxe_parameters[{i}]: name must not be empty"
+                "ipxe_template_parameters[{i}]: name must not be empty"
             )));
         }
     }
     for (i, a) in artifacts.iter().enumerate() {
         if a.name.trim().is_empty() {
             return Err(Status::invalid_argument(format!(
-                "ipxe_artifacts[{i}]: name must not be empty"
+                "ipxe_template_artifacts[{i}]: name must not be empty"
             )));
         }
         if a.url.trim().is_empty() {
             return Err(Status::invalid_argument(format!(
-                "ipxe_artifacts[{i}] '{}': url must not be empty",
+                "ipxe_template_artifacts[{i}] '{}': url must not be empty",
                 a.name
             )));
         }
@@ -52,7 +52,7 @@ fn validate_template_requirements(
 
     let renderer = carbide_ipxe_renderer::DefaultIpxeScriptRenderer::new();
 
-    let ipxeos = rpc_to_ipxe_templated_script(template_name, params, artifacts);
+    let ipxeos = rpc_to_ipxe_script(template_id, params, artifacts);
     let hash = renderer.hash(&ipxeos);
     let mut ipxeos_with_hash = ipxeos;
     ipxeos_with_hash.hash = hash.clone();
@@ -64,14 +64,14 @@ fn validate_template_requirements(
     Ok(hash)
 }
 
-fn rpc_to_ipxe_templated_script(
-    template_name: &str,
-    params: &[rpc::IpxeScriptParameter],
-    artifacts: &[rpc::IpxeScriptArtifact],
-) -> carbide_ipxe_renderer::IpxeTemplatedScript {
+fn rpc_to_ipxe_script(
+    template_id: &str,
+    params: &[rpc::IpxeTemplateParameter],
+    artifacts: &[rpc::IpxeTemplateArtifact],
+) -> carbide_ipxe_renderer::IpxeScript {
     let parameters = params
         .iter()
-        .map(|p| carbide_ipxe_renderer::IpxeScriptParameter {
+        .map(|p| carbide_ipxe_renderer::IpxeTemplateParameter {
             name: p.name.clone(),
             value: p.value.clone(),
         })
@@ -81,18 +81,18 @@ fn rpc_to_ipxe_templated_script(
         .iter()
         .map(|a| {
             let cache_strategy = match a.cache_strategy {
-                x if x == rpc::IpxeScriptArtifactCacheStrategy::LocalOnly as i32 => {
-                    carbide_ipxe_renderer::IpxeScriptArtifactCacheStrategy::LocalOnly
+                x if x == rpc::IpxeTemplateArtifactCacheStrategy::LocalOnly as i32 => {
+                    carbide_ipxe_renderer::IpxeTemplateArtifactCacheStrategy::LocalOnly
                 }
-                x if x == rpc::IpxeScriptArtifactCacheStrategy::CachedOnly as i32 => {
-                    carbide_ipxe_renderer::IpxeScriptArtifactCacheStrategy::CachedOnly
+                x if x == rpc::IpxeTemplateArtifactCacheStrategy::CachedOnly as i32 => {
+                    carbide_ipxe_renderer::IpxeTemplateArtifactCacheStrategy::CachedOnly
                 }
-                x if x == rpc::IpxeScriptArtifactCacheStrategy::RemoteOnly as i32 => {
-                    carbide_ipxe_renderer::IpxeScriptArtifactCacheStrategy::RemoteOnly
+                x if x == rpc::IpxeTemplateArtifactCacheStrategy::RemoteOnly as i32 => {
+                    carbide_ipxe_renderer::IpxeTemplateArtifactCacheStrategy::RemoteOnly
                 }
-                _ => carbide_ipxe_renderer::IpxeScriptArtifactCacheStrategy::CacheAsNeeded,
+                _ => carbide_ipxe_renderer::IpxeTemplateArtifactCacheStrategy::CacheAsNeeded,
             };
-            carbide_ipxe_renderer::IpxeScriptArtifact {
+            carbide_ipxe_renderer::IpxeTemplateArtifact {
                 name: a.name.clone(),
                 url: a.url.clone(),
                 sha: a.sha.clone(),
@@ -104,24 +104,24 @@ fn rpc_to_ipxe_templated_script(
         })
         .collect();
 
-    carbide_ipxe_renderer::IpxeTemplatedScript {
+    carbide_ipxe_renderer::IpxeScript {
         name: String::new(),
         description: None,
         hash: String::new(),
         tenant_id: None,
-        ipxe_template_name: template_name.to_string(),
+        ipxe_template_id: template_id.to_string(),
         parameters,
         artifacts,
     }
 }
 
-fn params_from_json(json: Option<&serde_json::Value>) -> Vec<rpc::IpxeScriptParameter> {
+fn params_from_json(json: Option<&serde_json::Value>) -> Vec<rpc::IpxeTemplateParameter> {
     let Some(serde_json::Value::Array(arr)) = json else {
         return vec![];
     };
     arr.iter()
         .filter_map(|v| {
-            Some(rpc::IpxeScriptParameter {
+            Some(rpc::IpxeTemplateParameter {
                 name: v.get("name")?.as_str()?.to_string(),
                 value: v.get("value")?.as_str().unwrap_or("").to_string(),
             })
@@ -129,13 +129,13 @@ fn params_from_json(json: Option<&serde_json::Value>) -> Vec<rpc::IpxeScriptPara
         .collect()
 }
 
-fn artifacts_from_json(json: Option<&serde_json::Value>) -> Vec<rpc::IpxeScriptArtifact> {
+fn artifacts_from_json(json: Option<&serde_json::Value>) -> Vec<rpc::IpxeTemplateArtifact> {
     let Some(serde_json::Value::Array(arr)) = json else {
         return vec![];
     };
     arr.iter()
         .filter_map(|v| {
-            Some(rpc::IpxeScriptArtifact {
+            Some(rpc::IpxeTemplateArtifact {
                 name: v.get("name")?.as_str()?.to_string(),
                 url: v.get("url")?.as_str().unwrap_or("").to_string(),
                 sha: v.get("sha").and_then(|v| v.as_str()).map(String::from),
@@ -160,7 +160,7 @@ fn artifacts_from_json(json: Option<&serde_json::Value>) -> Vec<rpc::IpxeScriptA
         .collect()
 }
 
-fn parameters_to_json(params: &[rpc::IpxeScriptParameter]) -> serde_json::Value {
+fn parameters_to_json(params: &[rpc::IpxeTemplateParameter]) -> serde_json::Value {
     serde_json::Value::Array(
         params
             .iter()
@@ -174,7 +174,7 @@ fn parameters_to_json(params: &[rpc::IpxeScriptParameter]) -> serde_json::Value 
     )
 }
 
-fn artifacts_to_json(artifacts: &[rpc::IpxeScriptArtifact]) -> serde_json::Value {
+fn artifacts_to_json(artifacts: &[rpc::IpxeTemplateArtifact]) -> serde_json::Value {
     serde_json::Value::Array(
         artifacts
             .iter()
@@ -203,7 +203,7 @@ pub async fn create_operating_system(
     let (
         type_,
         ipxe_script,
-        ipxe_template_name,
+        ipxe_template_id,
         ipxe_parameters,
         ipxe_artifacts,
         ipxe_definition_hash,
@@ -218,20 +218,22 @@ pub async fn create_operating_system(
             None,
             db::operating_system::OS_STATUS_READY.to_string(),
         )
-    } else if let Some(ref tmpl) = req.ipxe_template_name {
-        // cached_url can only be set via UpdateOperatingSystemCachableIpxeScriptArtifacts;
+    } else if let Some(ref tmpl) = req.ipxe_template_id {
+        let tmpl_str = tmpl.to_string();
+        // cached_url can only be set via UpdateOperatingSystemCachableIpxeTemplateArtifacts;
         // strip it from regular create requests.
-        let mut sanitized: Vec<rpc::IpxeScriptArtifact> = req.ipxe_artifacts.clone();
+        let mut sanitized: Vec<rpc::IpxeTemplateArtifact> = req.ipxe_template_artifacts.clone();
         for a in &mut sanitized {
             a.cached_url = None;
         }
 
-        let hash = validate_template_requirements(tmpl, &req.ipxe_parameters, &sanitized)?;
+        let hash =
+            validate_template_requirements(&tmpl_str, &req.ipxe_template_parameters, &sanitized)?;
 
-        let params = if req.ipxe_parameters.is_empty() {
+        let params = if req.ipxe_template_parameters.is_empty() {
             None
         } else {
-            Some(parameters_to_json(&req.ipxe_parameters))
+            Some(parameters_to_json(&req.ipxe_template_parameters))
         };
         let arts = if sanitized.is_empty() {
             None
@@ -242,8 +244,8 @@ pub async fn create_operating_system(
         // PROVISIONING if any artifact has CACHED_ONLY or LOCAL_ONLY strategy
         // (cached_url is always empty here since we stripped it above).
         let status = if sanitized.iter().any(|a| {
-            a.cache_strategy == rpc::IpxeScriptArtifactCacheStrategy::LocalOnly as i32
-                || a.cache_strategy == rpc::IpxeScriptArtifactCacheStrategy::CachedOnly as i32
+            a.cache_strategy == rpc::IpxeTemplateArtifactCacheStrategy::LocalOnly as i32
+                || a.cache_strategy == rpc::IpxeTemplateArtifactCacheStrategy::CachedOnly as i32
         }) {
             db::operating_system::OS_STATUS_PROVISIONING.to_string()
         } else {
@@ -253,7 +255,7 @@ pub async fn create_operating_system(
         (
             model::operating_system_definition::OS_TYPE_TEMPLATED_IPXE.to_string(),
             None,
-            Some(tmpl.clone()),
+            Some(tmpl_str),
             params,
             arts,
             Some(hash),
@@ -261,7 +263,7 @@ pub async fn create_operating_system(
         )
     } else {
         return Err(Status::invalid_argument(
-            "exactly one OS variant must be specified: ipxe_script or ipxe_template_name",
+            "exactly one OS variant must be specified: ipxe_script or ipxe_template_id",
         ));
     };
 
@@ -288,7 +290,7 @@ pub async fn create_operating_system(
         phone_home_enabled: req.phone_home_enabled,
         user_data: req.user_data,
         ipxe_script,
-        ipxe_template_name,
+        ipxe_template_id,
         ipxe_parameters,
         ipxe_artifacts,
         ipxe_definition_hash,
@@ -347,46 +349,52 @@ pub async fn update_operating_system(
         }
     })?;
 
-    if existing.ipxe_script.is_some() && req.ipxe_template_name.is_some() {
+    let req_template_id: Option<String> = req.ipxe_template_id.map(|id| id.to_string());
+
+    if existing.ipxe_script.is_some() && req_template_id.is_some() {
         return Err(Status::invalid_argument(
-            "cannot switch from ipxe_script variant to ipxe_template_name variant",
+            "cannot switch from ipxe_script variant to ipxe_template_id variant",
         ));
     }
-    if existing.ipxe_template_name.is_some() && req.ipxe_script.is_some() {
+    if existing.ipxe_template_id.is_some() && req.ipxe_script.is_some() {
         return Err(Status::invalid_argument(
-            "cannot switch from ipxe_template_name variant to ipxe_script variant",
+            "cannot switch from ipxe_template_id variant to ipxe_script variant",
         ));
     }
 
-    let effective_template = req
-        .ipxe_template_name
+    let effective_template = req_template_id
         .as_deref()
-        .or(existing.ipxe_template_name.as_deref());
+        .or(existing.ipxe_template_id.as_deref());
 
-    let req_params: Option<&[rpc::IpxeScriptParameter]> =
-        req.ipxe_parameters.as_ref().map(|w| w.items.as_slice());
-    let req_artifacts: Option<&[rpc::IpxeScriptArtifact]> =
-        req.ipxe_artifacts.as_ref().map(|w| w.items.as_slice());
+    let req_params: Option<&[rpc::IpxeTemplateParameter]> = req
+        .ipxe_template_parameters
+        .as_ref()
+        .map(|w| w.items.as_slice());
+    let req_artifacts: Option<&[rpc::IpxeTemplateArtifact]> = req
+        .ipxe_template_artifacts
+        .as_ref()
+        .map(|w| w.items.as_slice());
 
-    let ipxe_definition_hash = if let Some(provided_hash) = req.ipxe_definition_hash.as_deref() {
-        Some(provided_hash.to_owned())
-    } else if let Some(tmpl) = effective_template {
-        let effective_params: Vec<rpc::IpxeScriptParameter> = match req_params {
-            Some(p) => p.to_vec(),
-            None => params_from_json(existing.ipxe_parameters.as_ref().map(|j| &j.0)),
+    let ipxe_definition_hash =
+        if let Some(provided_hash) = req.ipxe_template_definition_hash.as_deref() {
+            Some(provided_hash.to_owned())
+        } else if let Some(tmpl) = effective_template {
+            let effective_params: Vec<rpc::IpxeTemplateParameter> = match req_params {
+                Some(p) => p.to_vec(),
+                None => params_from_json(existing.ipxe_parameters.as_ref().map(|j| &j.0)),
+            };
+            let effective_artifacts: Vec<rpc::IpxeTemplateArtifact> = match req_artifacts {
+                Some(a) => a.to_vec(),
+                None => artifacts_from_json(existing.ipxe_artifacts.as_ref().map(|j| &j.0)),
+            };
+            Some(validate_template_requirements(
+                tmpl,
+                &effective_params,
+                &effective_artifacts,
+            )?)
+        } else {
+            None
         };
-        let effective_artifacts: Vec<rpc::IpxeScriptArtifact> = match req_artifacts {
-            Some(a) => a.to_vec(),
-            None => artifacts_from_json(existing.ipxe_artifacts.as_ref().map(|j| &j.0)),
-        };
-        Some(validate_template_requirements(
-            tmpl,
-            &effective_params,
-            &effective_artifacts,
-        )?)
-    } else {
-        None
-    };
 
     let hash_changed = match (&ipxe_definition_hash, &existing.ipxe_definition_hash) {
         (Some(new_hash), Some(old_hash)) => new_hash != old_hash,
@@ -402,7 +410,7 @@ pub async fn update_operating_system(
 
     let mut effective_artifacts_for_json = match req_artifacts {
         Some(a) => {
-            // cached_url can only be set via UpdateOperatingSystemCachableIpxeScriptArtifacts;
+            // cached_url can only be set via UpdateOperatingSystemCachableIpxeTemplateArtifacts;
             // strip it from regular update requests.
             let mut v = a.to_vec();
             for art in &mut v {
@@ -427,8 +435,8 @@ pub async fn update_operating_system(
 
     let status = if hash_changed || req_artifacts.is_some() {
         let needs_provisioning = effective_artifacts_for_json.iter().any(|a| {
-            (a.cache_strategy == rpc::IpxeScriptArtifactCacheStrategy::LocalOnly as i32
-                || a.cache_strategy == rpc::IpxeScriptArtifactCacheStrategy::CachedOnly as i32)
+            (a.cache_strategy == rpc::IpxeTemplateArtifactCacheStrategy::LocalOnly as i32
+                || a.cache_strategy == rpc::IpxeTemplateArtifactCacheStrategy::CachedOnly as i32)
                 && a.cached_url.as_deref().unwrap_or("").is_empty()
         });
         if needs_provisioning {
@@ -449,7 +457,7 @@ pub async fn update_operating_system(
         phone_home_enabled: req.phone_home_enabled,
         user_data: req.user_data,
         ipxe_script: req.ipxe_script,
-        ipxe_template_name: req.ipxe_template_name,
+        ipxe_template_id: req_template_id,
         ipxe_parameters,
         ipxe_artifacts,
         ipxe_definition_hash,
@@ -516,8 +524,8 @@ pub async fn find_operating_system_ids(
 
 pub async fn get_operating_system_cachable_ipxe_script_artifacts(
     api: &Api,
-    request: Request<rpc::GetOperatingSystemCachableIpxeScriptArtifactsRequest>,
-) -> Result<Response<rpc::IpxeScriptArtifactList>, Status> {
+    request: Request<rpc::GetOperatingSystemCachableIpxeTemplateArtifactsRequest>,
+) -> Result<Response<rpc::IpxeTemplateArtifactList>, Status> {
     let req = request.into_inner();
 
     let id_proto = req
@@ -536,13 +544,13 @@ pub async fn get_operating_system_cachable_ipxe_script_artifacts(
         })?;
 
     let artifacts = artifacts_from_json(row.ipxe_artifacts.as_ref().map(|j| &j.0));
-    Ok(Response::new(rpc::IpxeScriptArtifactList { artifacts }))
+    Ok(Response::new(rpc::IpxeTemplateArtifactList { artifacts }))
 }
 
 pub async fn update_operating_system_cachable_ipxe_script_artifacts(
     api: &Api,
-    request: Request<rpc::UpdateOperatingSystemIpxeScriptArtifactRequest>,
-) -> Result<Response<rpc::IpxeScriptArtifactList>, Status> {
+    request: Request<rpc::UpdateOperatingSystemIpxeTemplateArtifactRequest>,
+) -> Result<Response<rpc::IpxeTemplateArtifactList>, Status> {
     let mut txn = api.txn_begin().await?;
     let req = request.into_inner();
 
@@ -588,7 +596,7 @@ pub async fn update_operating_system_cachable_ipxe_script_artifacts(
     // LOCAL_ONLY artifacts are excluded from this check (their cached_url is inherently set).
     let cached_only: Vec<_> = artifacts
         .iter()
-        .filter(|a| a.cache_strategy == rpc::IpxeScriptArtifactCacheStrategy::CachedOnly as i32)
+        .filter(|a| a.cache_strategy == rpc::IpxeTemplateArtifactCacheStrategy::CachedOnly as i32)
         .collect();
     let all_cached_only_have_urls = !cached_only.is_empty()
         && cached_only
@@ -621,7 +629,7 @@ pub async fn update_operating_system_cachable_ipxe_script_artifacts(
         phone_home_enabled: None,
         user_data: None,
         ipxe_script: None,
-        ipxe_template_name: None,
+        ipxe_template_id: None,
         ipxe_parameters: None,
         ipxe_artifacts,
         ipxe_definition_hash: None,
@@ -636,7 +644,7 @@ pub async fn update_operating_system_cachable_ipxe_script_artifacts(
         .map_err(|e| Status::internal(e.to_string()))?;
 
     let artifacts = artifacts_from_json(row.ipxe_artifacts.as_ref().map(|j| &j.0));
-    Ok(Response::new(rpc::IpxeScriptArtifactList { artifacts }))
+    Ok(Response::new(rpc::IpxeTemplateArtifactList { artifacts }))
 }
 
 pub async fn find_operating_systems_by_ids(

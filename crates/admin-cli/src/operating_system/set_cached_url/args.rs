@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-use ::rpc::forge::IpxeScriptArtifactUpdateRequest;
+use ::rpc::forge::IpxeTemplateArtifactUpdateRequest;
 use clap::Parser;
 
-fn parse_cached_url_update(s: &str) -> Result<IpxeScriptArtifactUpdateRequest, String> {
+fn parse_cached_url_update(s: &str) -> Result<IpxeTemplateArtifactUpdateRequest, String> {
     let (name, url) = s
         .split_once('=')
         .ok_or_else(|| format!("expected NAME=URL (or NAME= to clear), got '{s}'"))?;
@@ -27,7 +27,7 @@ fn parse_cached_url_update(s: &str) -> Result<IpxeScriptArtifactUpdateRequest, S
     } else {
         Some(url.to_string())
     };
-    Ok(IpxeScriptArtifactUpdateRequest {
+    Ok(IpxeTemplateArtifactUpdateRequest {
         name: name.to_string(),
         cached_url,
     })
@@ -45,5 +45,5 @@ pub struct Args {
         required = true,
         help = "Set cached_url for an artifact. Use NAME=URL to set, NAME= to clear. May be repeated."
     )]
-    pub updates: Vec<IpxeScriptArtifactUpdateRequest>,
+    pub updates: Vec<IpxeTemplateArtifactUpdateRequest>,
 }
